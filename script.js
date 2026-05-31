@@ -8,6 +8,10 @@ const EVENT_INTERVAL_MS = 30 * 60 * 1000;
 const EVENT_DURATION_MS = 5 * 60 * 1000;
 const RARE_EVENT_CHECK_MS = 60 * 1000;
 const RARE_EVENT_DURATION_MS = 2 * 60 * 1000;
+const WELISON_EVENT_DURATION_MS = 60 * 60 * 1000;
+const WELISON_EVENT_DAY = 6;
+const WELISON_EVENT_HOUR = 15;
+const WELISON_EVENT_MINUTE = 30;
 
 const fruits = [
   { prestige: 0, name: "Maçã Prata", shortName: "Prata", icon: "🍎", tier: "tier-silver", bonus: 1 },
@@ -66,6 +70,10 @@ const state = {
 
   rareEvent: null,
   rareEventEndsAt: 0,
+
+  welisonEventActive: false,
+  welisonEventEndsAt: 0,
+  welisonEventLastKey: "",
 
   soundEnabled: false,
   theme: "theme-pure",
@@ -234,6 +242,7 @@ const els = {
 };
 
 let activeCategory = "click";
+let twoXRainInterval = null;
 
 function formatNumber(value) {
   const number = Math.floor(value);
@@ -260,7 +269,11 @@ function getNextFruit() {
 
 function fruitBonus() { return getCurrentFruit().bonus; }
 function prestigeBonus() { return 1 + state.prestige; }
-function eventMultiplier() { return state.eventActive ? 2 : 1; }
+function eventMultiplier() {
+  let multiplier = state.eventActive ? 2 : 1;
+  if (state.welisonEventActive) multiplier *= 5;
+  return multiplier;
+}
 
 function rareMultiplier(type) {
   if (!state.rareEvent) return 1;
@@ -368,25 +381,118 @@ function renderFruit() {
   }
 }
 
+
+function getWelisonSaturdayKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getNextWelisonSaturday(now = new Date()) {
+  const next = new Date(now);
+  next.setHours(WELISON_EVENT_HOUR, WELISON_EVENT_MINUTE, 0, 0);
+
+  const day = next.getDay();
+  let daysUntilSaturday = (WELISON_EVENT_DAY - day + 7) % 7;
+
+  if (daysUntilSaturday === 0 && now.getTime() >= next.getTime() + WELISON_EVENT_DURATION_MS) {
+    daysUntilSaturday = 7;
+  }
+
+  next.setDate(next.getDate() + daysUntilSaturday);
+  return next;
+}
+
+function startWelisonEvent(now = new Date()) {
+  const key = getWelisonSaturdayKey(now);
+  const start = new Date(now);
+  start.setHours(WELISON_EVENT_HOUR, WELISON_EVENT_MINUTE, 0, 0);
+  const end = new Date(start.getTime() + WELISON_EVENT_DURATION_MS);
+
+  state.welisonEventActive = true;
+  state.welisonEventEndsAt = end.getTime();
+  state.welisonEventLastKey = key;
+
+  toast("Evento Welison 5x começou! Tema azul ativo até 16:30.");
+  playSound("event");
+  saveGame("Evento Welison 5x iniciado.");
+}
+
+function tickWelisonEvent() {
+  const now = new Date();
+  const startToday = new Date(now);
+  startToday.setHours(WELISON_EVENT_HOUR, WELISON_EVENT_MINUTE, 0, 0);
+  const endToday = new Date(startToday.getTime() + WELISON_EVENT_DURATION_MS);
+  const todayKey = getWelisonSaturdayKey(now);
+
+  const isSaturday = now.getDay() === WELISON_EVENT_DAY;
+  const insideWindow = isSaturday && now >= startToday && now < endToday;
+
+  if (insideWindow && !state.welisonEventActive && state.welisonEventLastKey !== todayKey) {
+    startWelisonEvent(now);
+  }
+
+  if (state.welisonEventActive && now.getTime() >= state.welisonEventEndsAt) {
+    state.welisonEventActive = false;
+    state.welisonEventEndsAt = 0;
+    toast("Evento Welison 5x terminou.");
+    saveGame("Evento Welison 5x finalizado.");
+  }
+
+  if (state.welisonEventActive) {
+    document.body.classList.add("welison-event-active");
+  } else {
+    document.body.classList.remove("welison-event-active");
+  }
+}
+
 function renderEvent() {
   const now = Date.now();
+
+  if (state.welisonEventActive) {
+    els.eventTitle.textContent = "Welison 5x ativo";
+    els.eventTimer.textContent = `tema azul · termina em ${formatTime(state.welisonEventEndsAt - now)}`;
+    document.body.classList.add("welison-event-active");
+    document.body.classList.remove("rare-event-active");
+    document.body.classList.remove("event-active");
+    stopTwoXAppleRain();
+    return;
+  }
+
+  document.body.classList.remove("welison-event-active");
+
   if (state.rareEvent) {
     const rare = rareEvents.find(e => e.id === state.rareEvent);
     els.eventTitle.textContent = rare ? rare.name : "Evento raro";
     els.eventTimer.textContent = `raro termina em ${formatTime(state.rareEventEndsAt - now)}`;
     document.body.classList.add("rare-event-active");
+    document.body.classList.remove("event-active");
     return;
   }
+
   document.body.classList.remove("rare-event-active");
 
   if (state.eventActive) {
     els.eventTitle.textContent = "Evento 2x ativo";
     els.eventTimer.textContent = `termina em ${formatTime(state.eventEndsAt - now)}`;
     document.body.classList.add("event-active");
+    startTwoXAppleRain();
   } else {
-    els.eventTitle.textContent = "Evento 2x";
-    els.eventTimer.textContent = `começa em ${formatTime(state.nextEventAt - now)}`;
+    const nextWelison = getNextWelisonSaturday(new Date());
+    const welisonRemaining = nextWelison.getTime() - now;
+    const normalRemaining = state.nextEventAt - now;
+
+    if (welisonRemaining < normalRemaining || welisonRemaining < 24 * 60 * 60 * 1000) {
+      els.eventTitle.textContent = "Welison 5x";
+      els.eventTimer.textContent = `sábado 15:30 · começa em ${formatTime(welisonRemaining)}`;
+    } else {
+      els.eventTitle.textContent = "Evento 2x";
+      els.eventTimer.textContent = `começa em ${formatTime(normalRemaining)}`;
+    }
+
     document.body.classList.remove("event-active");
+    stopTwoXAppleRain();
   }
 }
 
@@ -596,6 +702,38 @@ function tickRain() {
   render();
 }
 
+
+function startTwoXAppleRain() {
+  if (twoXRainInterval) return;
+
+  twoXRainInterval = setInterval(() => {
+    if (!state.eventActive || state.welisonEventActive) {
+      stopTwoXAppleRain();
+      return;
+    }
+
+    for (let i = 0; i < 3; i++) {
+      const apple = document.createElement("span");
+      apple.className = "two-x-apple-rain";
+      apple.textContent = "🍎";
+      apple.style.left = `${Math.random() * 100}vw`;
+      apple.style.animationDuration = `${3.2 + Math.random() * 2.4}s`;
+      apple.style.fontSize = `${17 + Math.random() * 18}px`;
+      apple.style.animationDelay = `${Math.random() * .35}s`;
+      document.body.appendChild(apple);
+
+      setTimeout(() => apple.remove(), 6500);
+    }
+  }, 280);
+}
+
+function stopTwoXAppleRain() {
+  if (twoXRainInterval) {
+    clearInterval(twoXRainInterval);
+    twoXRainInterval = null;
+  }
+}
+
 function tickEvent() {
   const now = Date.now();
 
@@ -611,6 +749,7 @@ function tickEvent() {
     state.eventActive = false;
     state.eventEndsAt = 0;
     state.nextEventAt = now + getEventInterval();
+    stopTwoXAppleRain();
     toast("Evento 2x terminou.");
     saveGame("Evento 2x finalizado.");
   }
@@ -620,7 +759,8 @@ function tickEvent() {
     state.eventEndsAt = now + getEventDuration();
     state.nextEventAt = state.eventEndsAt + getEventInterval();
     state.stats.totalEventsUsed += 1;
-    toast("Evento 2x começou! Ganhos dobrados.");
+    startTwoXAppleRain();
+    toast("Evento 2x começou! Ganhos dobrados. Maçãs douradas ativadas.");
     playSound("event");
     saveGame("Evento 2x iniciado.");
   }
@@ -733,6 +873,9 @@ function loadGame() {
     if (state.rareEvent && (!state.rareEventEndsAt || state.rareEventEndsAt < Date.now())) {
       state.rareEvent = null; state.rareEventEndsAt = 0;
     }
+    if (state.welisonEventActive && (!state.welisonEventEndsAt || state.welisonEventEndsAt < Date.now())) {
+      state.welisonEventActive = false; state.welisonEventEndsAt = 0;
+    }
     state.rainActive = false;
     state.rainTime = 0;
     state.stats.startedAt = Date.now();
@@ -818,11 +961,13 @@ window.addEventListener("beforeunload", () => {
 loadGame();
 setTheme(state.theme || "theme-pure");
 checkAchievements();
+tickWelisonEvent();
 render();
 
 setInterval(tickAuto, 1000);
 setInterval(tickRain, 1000);
 setInterval(tickEvent, 1000);
+setInterval(tickWelisonEvent, 1000);
 setInterval(maybeStartRareEvent, RARE_EVENT_CHECK_MS);
 setInterval(() => {
   state.stats.playSeconds += Math.floor((Date.now() - state.stats.startedAt) / 1000);

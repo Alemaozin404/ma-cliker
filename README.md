@@ -78,3 +78,36 @@ Esta versão corrige principalmente aparência e responsividade:
 - Ajusta tamanho da fruta, anéis e botões no mobile.
 - Melhora contraste e espaçamento.
 - Mantém todas as funções da Ultra V3.
+
+
+## Evento semanal Welison 5x
+
+Adicionado nesta versão:
+
+- Todo sábado acontece o evento **Welison 5x**.
+- O evento dura 1 hora.
+- Durante o evento, todos os ganhos recebem multiplicador 5x.
+- O tema muda automaticamente para azul enquanto o evento estiver ativo.
+- Quando o evento termina, o tema volta ao estilo normal escolhido pelo jogador.
+- O evento aparece no painel superior com contador de tempo.
+
+
+## Correção do horário do Welison 5x
+
+O evento **Welison 5x** agora acontece exatamente:
+
+- Todo sábado;
+- Começa às **15:30**;
+- Termina às **16:30**;
+- Dura 1 hora;
+- Durante esse período, o tema fica azul e os ganhos ficam 5x.
+
+
+## Efeito visual do evento 2x
+
+Atualização adicionada:
+
+- Quando o evento 2x normal começa, aparecem maçãs caindo no fundo.
+- Durante o evento 2x, a fruta principal fica com aparência meio dourada.
+- Quando o evento 2x termina, o efeito para automaticamente.
+- O evento Welison 5x continua com prioridade e tema azul separado.
