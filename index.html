@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maçã Clicker Black & White</title>
+  <meta name="description" content="Maçã Clicker Black & White - jogo clicker online com melhorias, prestígio e salvamento automático." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="background-glow glow-one"></div>
+  <div class="background-glow glow-two"></div>
+  <div class="background-glow glow-three"></div>
+
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">online edition</p>
+        <h1>Maçã Clicker</h1>
+      </div>
+
+      <div class="save-status">
+        <span id="saveDot" class="save-dot"></span>
+        <span id="saveText">Salvamento automático ativo</span>
+      </div>
+    </header>
+
+    <section class="layout">
+      <section class="game-panel">
+        <div class="stats-card">
+          <p class="label">Maçãs</p>
+          <h2 id="appleCount">0</h2>
+
+          <div class="mini-stats">
+            <span id="clickPower">Clique: +1</span>
+            <span id="autoPower">Auto: 0/s</span>
+            <span id="multiPower">Multi: x1</span>
+            <span id="prestigePower">Prestígio: 0</span>
+          </div>
+        </div>
+
+        <div class="apple-zone" id="appleZone">
+          <div class="ring ring-one"></div>
+          <div class="ring ring-two"></div>
+
+          <button class="apple-button" id="appleButton" aria-label="Clique na maçã">
+            <span class="apple-shape">
+              <span class="apple-stem"></span>
+              <span class="apple-leaf"></span>
+              <span class="apple-highlight"></span>
+              <span class="apple-emoji">🍎</span>
+            </span>
+          </button>
+
+          <p class="tap-help">Clique na maçã para coletar</p>
+          <div id="floatingLayer" class="floating-layer"></div>
+        </div>
+
+        <div class="system-actions">
+          <button id="manualSaveBtn" class="system-btn">Salvar agora</button>
+          <button id="resetBtn" class="system-btn danger">Resetar save</button>
+        </div>
+      </section>
+
+      <aside class="shop-panel">
+        <div class="shop-header">
+          <p class="eyebrow">melhorias</p>
+          <h2>Loja</h2>
+        </div>
+
+        <div class="upgrades" id="upgrades"></div>
+      </aside>
+    </section>
+
+    <footer>
+      <span>Salva automaticamente no navegador usando localStorage.</span>
+      <span>Pronto para GitHub Pages.</span>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
