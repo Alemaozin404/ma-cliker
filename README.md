@@ -1,46 +1,31 @@
-# Maçã Clicker Black & White
+# Maçã Clicker Black & White - Evolution Edition
 
-Jogo clicker feito em HTML, CSS e JavaScript, pronto para subir no GitHub Pages.
+Versão web pronta para GitHub Pages.
 
-## Arquivos
+## Novidades
 
-- `index.html`
-- `style.css`
-- `script.js`
+- Aparência melhorada, mais premium e animada.
+- Frutas novas a cada 10 prestígios:
+  - 0: Maçã Prata
+  - 10: Maçã Bronze
+  - 20: Maçã de Ouro
+  - 30: Maçã de Rubi
+  - 40: Maçã de Cristal
+- Cada fruta nova tem bônus próprio nos ganhos.
+- Evento automático de 2x:
+  - começa a cada 30 minutos;
+  - dura 5 minutos;
+  - dobra clique, auto coletor e chuva.
+- Salvamento automático com localStorage.
 
-## Como testar no PC
+## Como testar
 
-Abra o arquivo `index.html` no navegador.
+Abra `index.html` no navegador.
 
 ## Como subir no GitHub Pages
 
-1. Crie um repositório no GitHub, por exemplo:
-   `maca-clicker`
+Envie `index.html`, `style.css`, `script.js` e `README.md` para a raiz do repositório.
 
-2. Envie estes arquivos para a raiz do repositório:
-   - `index.html`
-   - `style.css`
-   - `script.js`
+Depois vá em:
 
-3. No GitHub, entre em:
-   `Settings > Pages`
-
-4. Em `Build and deployment`, escolha:
-   - Source: `Deploy from a branch`
-   - Branch: `main`
-   - Folder: `/root`
-
-5. Clique em salvar.
-
-Depois o site fica em um link parecido com:
-
-`https://SEU_USUARIO.github.io/maca-clicker/`
-
-## Salvamento automático
-
-O jogo salva automaticamente no navegador usando `localStorage`.
-
-Isso significa:
-- se abrir no mesmo navegador, o progresso volta;
-- se abrir em outro celular/PC, começa um save novo;
-- limpar dados do navegador apaga o progresso.
+`Settings > Pages > Deploy from branch > main > /root`
