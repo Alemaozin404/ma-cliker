@@ -111,3 +111,23 @@ Atualização adicionada:
 - Durante o evento 2x, a fruta principal fica com aparência meio dourada.
 - Quando o evento 2x termina, o efeito para automaticamente.
 - O evento Welison 5x continua com prioridade e tema azul separado.
+
+
+## Organização lógica dos multiplicadores
+
+Atualização adicionada:
+
+- Ao clicar durante evento 2x, Welison 5x, crítico ou evento raro, o jogo mostra a conta do ganho.
+- Exemplo: `100 × x2 = 200`.
+- Se tiver Welison 5x + fruta + prestígio, aparece separado no texto.
+- O painel principal mostra a fórmula lógica do clique atual.
+- O ganho automático também mostra a conta quando aparece o texto flutuante.
+- A lógica agora separa:
+  - base do clique;
+  - bônus de fruta;
+  - bônus de prestígio;
+  - evento 2x;
+  - Welison 5x;
+  - evento raro;
+  - crítico;
+  - chuva.

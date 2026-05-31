@@ -1387,3 +1387,59 @@ body.event-active .event-pill {
     opacity: 0;
   }
 }
+
+
+/* Texto lógico de multiplicadores no clique */
+.float-text.logic {
+  min-width: 190px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 16px;
+  background: rgba(0,0,0,.72);
+  backdrop-filter: blur(8px);
+  text-align: center;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.float-text.logic strong {
+  display: block;
+  font-size: 22px;
+  color: #fff;
+}
+
+.float-text.logic span {
+  display: block;
+  color: #cfcfcf;
+  font-size: 11px;
+  margin-top: 4px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.float-text.logic.event {
+  border-color: rgba(255, 230, 130, .6);
+  box-shadow: 0 0 26px rgba(255, 220, 90, .18);
+}
+
+.float-text.logic.welison {
+  border-color: rgba(113, 201, 255, .8);
+  box-shadow: 0 0 28px rgba(60, 160, 255, .28);
+}
+
+.float-text.logic.rare {
+  border-color: rgba(255,255,255,.7);
+  box-shadow: 0 0 26px rgba(255,255,255,.18);
+}
+
+.formula-help {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.035);
+  border-radius: 15px;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}

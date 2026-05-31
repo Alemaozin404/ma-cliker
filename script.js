@@ -228,6 +228,7 @@ const els = {
   fruitProgressBar: document.getElementById("fruitProgressBar"),
   fruitRoadmap: document.getElementById("fruitRoadmap"),
   tapHelp: document.getElementById("tapHelp"),
+  formulaHelp: document.getElementById("formulaHelp"),
   achievements: document.getElementById("achievements"),
   achievementCount: document.getElementById("achievementCount"),
   statGrid: document.getElementById("statGrid"),
@@ -290,8 +291,97 @@ function getClickBase() {
   return state.clickPower + state.fastHand * 5;
 }
 
+function getActiveMultipliers(type = "click") {
+  const list = [];
+
+  const prestige = prestigeBonus();
+  if (prestige !== 1) {
+    list.push({ id: "prestige", label: "Prestígio", value: prestige });
+  }
+
+  const fruit = fruitBonus();
+  if (fruit !== 1) {
+    list.push({ id: "fruit", label: getCurrentFruit().shortName, value: fruit });
+  }
+
+  if (state.eventActive) {
+    list.push({ id: "event2x", label: "Evento 2x", value: 2 });
+  }
+
+  if (state.welisonEventActive) {
+    list.push({ id: "welison", label: "Welison 5x", value: 5 });
+  }
+
+  if (state.rareEvent === "auto3x" && type === "auto") {
+    list.push({ id: "rareAuto", label: "Auto 3x", value: 3 });
+  }
+
+  if (state.rareEvent === "legendaryFruit") {
+    list.push({ id: "rareFruit", label: "Fruta Lendária 4x", value: 4 });
+  }
+
+  return list;
+}
+
+function multiplyList(list) {
+  return list.reduce((total, item) => total * item.value, 1);
+}
+
+function getClickBreakdown(isCritical = false) {
+  const base = getClickBase();
+  const multipliers = getActiveMultipliers("click");
+  let criticalMultiplier = 1;
+
+  if (isCritical) {
+    criticalMultiplier = state.criticalPower;
+    if (state.rareEvent === "doubleCrit") criticalMultiplier *= 2;
+    multipliers.push({ id: "critical", label: "Crítico", value: criticalMultiplier });
+  }
+
+  const rainBonus = getRainClickBonus();
+  const multiplierTotal = multiplyList(multipliers);
+  const multiplied = base * multiplierTotal;
+  const total = multiplied + rainBonus;
+
+  return {
+    base,
+    multipliers,
+    multiplierTotal,
+    multiplied,
+    rainBonus,
+    total,
+    isCritical
+  };
+}
+
+function getAutoBreakdown() {
+  const base = getAutoBase();
+  const multipliers = getActiveMultipliers("auto");
+  const multiplierTotal = multiplyList(multipliers);
+  const total = base * multiplierTotal;
+
+  return { base, multipliers, multiplierTotal, total };
+}
+
+function formatMultiplier(value) {
+  if (Number.isInteger(value)) return `x${value}`;
+  return `x${value.toFixed(2).replace(".", ",")}`;
+}
+
+function getMultiplierLabel(multipliers) {
+  if (!multipliers.length) return "sem multiplicador ativo";
+  return multipliers.map(item => `${item.label} ${formatMultiplier(item.value)}`).join(" · ");
+}
+
+function getEventLogicClass(multipliers) {
+  if (multipliers.some(item => item.id === "welison")) return "welison";
+  if (multipliers.some(item => item.id === "rareAuto" || item.id === "rareFruit")) return "rare";
+  if (multipliers.some(item => item.id === "event2x")) return "event";
+  return "";
+}
+
 function getClickGain() {
-  return getClickBase() * state.multiplier * prestigeBonus() * fruitBonus() * eventMultiplier() * rareMultiplier("click");
+  return getClickBreakdown(false).total;
 }
 
 function getAutoBase() {
@@ -299,7 +389,7 @@ function getAutoBase() {
 }
 
 function getAutoGain() {
-  return getAutoBase() * state.multiplier * prestigeBonus() * fruitBonus() * eventMultiplier() * rareMultiplier("auto");
+  return getAutoBreakdown().total;
 }
 
 function getRainClickBonus() {
@@ -571,6 +661,10 @@ function render() {
   els.autoPower.textContent = `Auto: ${formatNumber(getAutoGain())}/s`;
   els.multiPower.textContent = `Multi: x${state.multiplier}`;
   els.prestigePower.textContent = `Prestígio: ${state.prestige}`;
+  if (els.formulaHelp) {
+    const clickBreakdown = getClickBreakdown(false);
+    els.formulaHelp.textContent = `Clique lógico: ${formatNumber(clickBreakdown.base)} base × ${formatMultiplier(clickBreakdown.multiplierTotal)} = ${formatNumber(clickBreakdown.multiplied)}${clickBreakdown.rainBonus > 0 ? ` + chuva ${formatNumber(clickBreakdown.rainBonus)}` : ""}`;
+  }
   els.soundToggle.textContent = state.soundEnabled ? "🔊 Sons" : "🔇 Sons";
 
   renderFruit();
@@ -611,27 +705,37 @@ function buyUpgrade(upgrade) {
 }
 
 function clickFruit(event) {
-  let gain = getClickGain();
-  let critical = false;
+  const criticalHappened = getCriticalChance() > 0 && Math.random() * 100 <= getCriticalChance();
+  const breakdown = getClickBreakdown(criticalHappened);
+  const gain = breakdown.total;
 
-  if (getCriticalChance() > 0 && Math.random() * 100 <= getCriticalChance()) {
-    let critPower = state.criticalPower;
-    if (state.rareEvent === "doubleCrit") critPower *= 2;
-    gain *= critPower;
-    critical = true;
-  }
-
-  gain += getRainClickBonus();
   state.apples += gain;
   state.stats.totalClicks += 1;
   state.stats.totalFruitsCollected += gain;
   state.stats.bestClickGain = Math.max(state.stats.bestClickGain, gain);
 
   const rect = els.floatingLayer.getBoundingClientRect();
-  createFloatText(event.clientX - rect.left, event.clientY - rect.top, `${critical ? "CRÍTICO " : ""}+${formatNumber(gain)} 🍎`, critical);
+  const label = getMultiplierLabel(breakdown.multipliers);
+  const logicClass = getEventLogicClass(breakdown.multipliers);
+
+  let detail = `${formatNumber(breakdown.base)} × ${formatMultiplier(breakdown.multiplierTotal)} = ${formatNumber(breakdown.multiplied)}`;
+
+  if (breakdown.rainBonus > 0) {
+    detail += ` + chuva ${formatNumber(breakdown.rainBonus)}`;
+  }
+
+  createLogicFloatText(
+    event.clientX - rect.left,
+    event.clientY - rect.top,
+    `+${formatNumber(gain)} 🍎`,
+    `${detail} · ${label}`,
+    logicClass,
+    criticalHappened
+  );
+
   burstParticles(event.clientX, event.clientY);
 
-  playSound(critical ? "critical" : "click");
+  playSound(criticalHappened ? "critical" : "click");
   checkAchievements();
   render();
 }
@@ -644,6 +748,16 @@ function createFloatText(x, y, text, critical = false) {
   floatText.style.top = `${y}px`;
   els.floatingLayer.appendChild(floatText);
   setTimeout(() => floatText.remove(), 950);
+}
+
+function createLogicFloatText(x, y, mainText, detailText, eventClass = "", critical = false) {
+  const floatText = document.createElement("span");
+  floatText.className = `float-text logic ${eventClass} ${critical ? "critical" : ""}`;
+  floatText.innerHTML = `<strong>${mainText}</strong><span>${detailText}</span>`;
+  floatText.style.left = `${x}px`;
+  floatText.style.top = `${y}px`;
+  els.floatingLayer.appendChild(floatText);
+  setTimeout(() => floatText.remove(), 1150);
 }
 
 function burstParticles(x, y) {
@@ -684,7 +798,15 @@ function tickAuto() {
     state.apples += gain;
     state.stats.totalFruitsCollected += gain;
     state.stats.bestAutoGain = Math.max(state.stats.bestAutoGain, gain);
-    createFloatText(200 + Math.random() * 260, 180 + Math.random() * 110, `+${formatNumber(gain)} auto 🍎`);
+    const autoBreakdown = getAutoBreakdown();
+    createLogicFloatText(
+      200 + Math.random() * 260,
+      180 + Math.random() * 110,
+      `+${formatNumber(gain)} auto 🍎`,
+      `${formatNumber(autoBreakdown.base)} × ${formatMultiplier(autoBreakdown.multiplierTotal)} = ${formatNumber(autoBreakdown.total)} · ${getMultiplierLabel(autoBreakdown.multipliers)}`,
+      getEventLogicClass(autoBreakdown.multipliers),
+      false
+    );
     checkAchievements();
     render();
   }
