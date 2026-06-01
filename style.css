@@ -275,3 +275,199 @@ body.event-gold{--accent:#ffe066;--accent2:#ff9f1c}body.event-blue{--accent:#6bd
 @media (max-width:430px){.hud-grid{grid-template-columns:1fr 1fr}.top-hud strong{font-size:1.78rem}.apple-core{font-size:6.4rem}.mini-hud span{font-size:.84rem;padding:8px 10px}.primary,.secondary,.danger{white-space:normal}.quick-buy{grid-template-columns:auto 1fr}.quick-buy button{grid-column:1/-1;width:100%}.brand h1{font-size:1.3rem}.screen-head h2{font-size:1.48rem}}
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 body[data-fx="low"] .cinema-light,body[data-fx="low"] .stars,body[data-fx="low"]:before{animation:none;opacity:.08}body[data-fx="low"] .particle{display:none}
+
+/* V10.4 PC layout + mobile performance polish */
+:root{
+  --side:246px;
+  --quick:286px;
+  --gap:14px;
+  --radius:22px;
+  --radius2:16px;
+}
+body{
+  background:
+    radial-gradient(circle at 8% 18%, rgba(70,132,255,.18), transparent 26%),
+    radial-gradient(circle at 78% 10%, rgba(255,185,96,.16), transparent 27%),
+    radial-gradient(circle at 64% 72%, rgba(255,91,129,.10), transparent 34%),
+    linear-gradient(135deg,#070b16,#10182a 55%,#090914);
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-3;
+  background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:42px 42px;
+  mask-image:radial-gradient(circle at 50% 34%,#000 0 42%,transparent 76%);
+}
+.app-shell{
+  max-width:1320px;
+  padding:14px;
+  align-items:start;
+}
+.panel,.panel-soft,.card,.item,.quick-buy,.top-hud,.stage,.side,.quick-shop{
+  border-color:rgba(255,255,255,.14);
+  box-shadow:0 18px 46px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.side,.quick-shop{height:calc(100vh - 28px)}
+.brand{padding:9px 10px 8px;border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.09)}
+.brand h1{font-size:1.75rem;letter-spacing:-.075em;margin:7px 0 6px}
+.main-nav{gap:6px}
+.main-nav button{
+  min-height:42px;
+  padding:9px 10px;
+  border-radius:14px;
+  background:rgba(255,255,255,.018);
+}
+.main-nav button.active{
+  background:linear-gradient(135deg,rgba(255,198,97,.95),rgba(255,106,128,.92));
+  color:#11131a;
+  box-shadow:0 12px 26px rgba(255,120,118,.18);
+}
+.main-nav button.active small{color:rgba(17,19,26,.68)}
+.main-nav button:hover{transform:translateX(1px)}
+.event-ticker{padding:11px;border-radius:16px}
+.top-hud{
+  grid-template-columns:minmax(170px,.55fr) 1fr;
+  padding:12px;
+  border-radius:22px;
+  margin-bottom:14px;
+}
+.top-hud>div:first-child{
+  padding:13px 16px;
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(255,198,97,.20),rgba(255,106,128,.08));
+  border:1px solid rgba(255,255,255,.11);
+}
+.top-hud strong{font-size:2.55rem}
+.hud-grid{grid-template-columns:repeat(5,minmax(78px,1fr));gap:8px}
+.hud-grid span{min-height:54px;padding:8px;border-radius:15px;background:linear-gradient(180deg,rgba(255,255,255,.088),rgba(255,255,255,.038))}
+.stage{
+  min-height:calc(100vh - 126px);
+  padding:18px;
+  gap:11px;
+  grid-template-rows:auto auto auto minmax(285px,1fr) auto;
+}
+.stage:before{opacity:.72;background:radial-gradient(circle at 50% 44%,rgba(255,214,145,.14),transparent 31%)}
+.world-badge{margin:0 auto;padding:9px 16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.mini-hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.mini-hud span{text-align:center;padding:10px 8px;border-radius:15px;font-size:.85rem;background:rgba(0,0,0,.16)}
+.apple-zone{min-height:318px}
+.apple-btn{width:min(236px,52vw);animation:none;will-change:transform}
+.apple-glow{filter:blur(14px);opacity:.48;animation:radialPulse 2.8s ease-in-out infinite}
+.apple-core{font-size:clamp(5.8rem,11vw,8.6rem)}
+.quick-actions{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+}
+.quick-actions button{
+  min-height:74px;
+  white-space:normal;
+  border-radius:19px;
+  padding:13px 12px;
+  position:relative;
+  overflow:hidden;
+}
+.quick-actions button::before,.quick-buy button::before,.primary::before,.secondary::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(120deg,transparent,rgba(255,255,255,.20),transparent);
+  transform:translateX(-120%);
+  transition:transform .5s ease;
+  pointer-events:none;
+}
+.quick-actions button:hover::before,.quick-buy button:hover::before,.primary:hover::before,.secondary:hover::before{transform:translateX(120%)}
+.primary,.secondary,.danger{
+  position:relative;
+  overflow:hidden;
+  border-radius:15px;
+  min-height:38px;
+  padding:10px 13px;
+  box-shadow:0 10px 22px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.10);
+}
+.primary{background:linear-gradient(135deg,#ffd166 0%,#ff9b62 48%,#ff647c 100%)}
+.secondary{background:linear-gradient(180deg,rgba(255,255,255,.090),rgba(255,255,255,.045))}
+.primary:hover,.secondary:hover,.danger:hover{transform:translateY(-1px)}
+.quick-shop{padding:14px;position:sticky;top:14px;border-radius:22px;overflow:hidden}
+.quick-shop-head{padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.09)}
+.quick-shop h2{font-size:1.28rem;margin:.15rem 0 0}
+#quickShopHint{font-size:.86rem;margin:10px 0 11px}
+.quick-shop-list{gap:9px;max-height:calc(100vh - 206px);padding-right:4px;overflow:auto}
+.quick-buy{
+  grid-template-columns:38px minmax(0,1fr);
+  gap:10px;
+  padding:10px;
+  border-radius:18px;
+  background:linear-gradient(150deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+}
+.quick-buy .icon{width:38px;height:38px;border-radius:13px;font-size:1.2rem}
+.quick-buy h3{font-size:.92rem;margin:0 0 1px}
+.quick-buy small{font-size:.72rem;color:rgba(226,232,240,.72)}
+.quick-buy button{
+  grid-column:1/-1;
+  width:100%;
+  min-height:34px;
+  padding:8px 10px;
+  border-radius:13px;
+  font-size:.88rem;
+}
+.grid-cards{gap:11px}.card{padding:14px}.item{padding:11px;border-radius:16px}.icon{width:44px;height:44px;border-radius:14px}
+.stars{opacity:.085;animation-duration:42s}.cinema-light{opacity:.10;filter:blur(22px);animation-duration:14s}.sun-glow{opacity:.105;filter:blur(72px)}
+
+@media (max-width:1280px){
+  :root{--side:226px;--quick:270px;--gap:12px}
+  .app-shell{max-width:1180px;padding:12px;gap:12px}
+  .brand h1{font-size:1.55rem}
+  .main-nav button{font-size:.88rem}
+  .main-nav button small{font-size:.65rem}
+  .top-hud strong{font-size:2.25rem}
+  .hud-grid{grid-template-columns:repeat(5,minmax(62px,1fr))}
+  .hud-grid span{min-height:50px}.hud-grid small{font-size:.64rem}
+  .quick-shop h2{font-size:1.12rem}
+  .quick-buy h3{font-size:.86rem}.quick-buy small{font-size:.66rem}
+  .apple-zone{min-height:290px}.apple-btn{width:min(214px,50vw)}
+  .quick-actions button{min-height:62px;font-size:.88rem}
+}
+
+@media (max-width:980px){
+  body{padding-bottom:84px;background:linear-gradient(180deg,#091120,#111827 56%,#080a12)}
+  body::before,.cinema-light,.stars{display:none!important}
+  .app-shell{padding:8px;max-width:none}
+  .side{height:auto;margin-bottom:8px;padding:10px;border-radius:22px;backdrop-filter:blur(12px)}
+  .top-hud{padding:10px;border-radius:22px;gap:8px;position:relative!important}
+  .top-hud>div:first-child{padding:11px 13px}
+  .top-hud strong{font-size:2rem}
+  .hud-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .hud-grid span{min-height:48px;border-radius:14px}
+  .stage{padding:12px;gap:10px;border-radius:22px;grid-template-rows:auto auto auto minmax(260px,1fr) auto}
+  .mini-hud{grid-template-columns:1fr 1fr;gap:7px}.mini-hud span{padding:8px 7px;font-size:.78rem}
+  .apple-zone{min-height:285px}.apple-btn{width:min(224px,64vw)}.apple-glow{filter:blur(10px);opacity:.38}.apple-core{font-size:6.2rem}
+  .quick-actions{grid-template-columns:1fr;gap:8px}.quick-actions button{min-height:48px;border-radius:16px}
+  .quick-shop{left:8px;right:8px;bottom:8px;border-radius:24px;max-height:58vh;padding:9px;backdrop-filter:blur(16px)}
+  .quick-shop-list{max-height:37vh}.quick-buy{padding:8px;border-radius:16px}.quick-buy button{min-height:36px}
+  .particle-layer,.pet-orbit{display:none!important}
+  .float-text{animation-duration:.58s;font-size:.9rem}
+}
+
+@media (max-width:430px){
+  .brand h1{font-size:1.2rem}.brand p{font-size:.72rem}
+  .top-hud strong{font-size:1.7rem}.hud-grid b{font-size:.9rem}.hud-grid small{font-size:.62rem}
+  .stage{padding:10px}.apple-zone{min-height:245px}.apple-btn{width:min(196px,61vw)}.apple-core{font-size:5.4rem}
+  .world-badge{padding:8px 12px;font-size:.86rem}.mini-hud span{font-size:.72rem}
+}
+
+body[data-fx="low"] .sun-glow,
+body[data-fx="low"] .cinema-light,
+body[data-fx="low"] .stars,
+body[data-fx="low"] .pet-orbit,
+body[data-fx="low"] .particle-layer,
+body[data-fx="low"] body::before{display:none!important}
+body[data-fx="low"] .panel,
+body[data-fx="low"] .panel-soft,
+body[data-fx="low"] .card,
+body[data-fx="low"] .item,
+body[data-fx="low"] .quick-buy{backdrop-filter:none!important}
+body[data-fx="low"] .apple-glow{animation:none!important;filter:blur(8px);opacity:.30}
+body[data-fx="low"] .apple-btn{animation:none!important}

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const VERSION = '10.2.0-boss-shop-fix';
+  const VERSION = '10.4.0-pc-mobile-perf-fix';
   const SAVE_KEY = 'maca_clicker_v10_world_pets_save';
   const RANK_KEY = 'maca_clicker_v10_ranking';
   const MINUTE = 60000, HOUR = 3600000;
@@ -65,7 +65,7 @@
     combo:{count:0,best:0,expires:0}, daily:{last:'',streak:0}, codes:{},
     settings:{sound:false,music:false,perf:'auto',seenStory:false,quickCollapsed:false}, screen:'home'
   });
-  let state = defaultState(), dirty = true, lastTick = now(), lastSave = now(), audio = null, musicTimer = null, visible = true, lastPetSig = '';
+  let state = defaultState(), dirty = true, lastTick = now(), lastSave = now(), lastHud = 0, lastFloat = 0, audio = null, musicTimer = null, visible = true, lastPetSig = '';
   const dom = {};
 
   function bindDom(){ ['loadingScreen','loaderBar','startBtn','storyModal','closeStoryBtn','toastStack','particleLayer','mainNav','mobileMenuBtn','worldSubtitle','eventTitle','eventHint','fruitCount','clickStat','autoStat','multiStat','petStat','worldStat','worldIcon','worldName','comboText','offlineText','passMini','bossMini','bossAlert','bossAlertName','bossAlertTimer','bossAlertLife','petOrbit','appleBtn','appleSkin','floatLayer','claimDailyBtn','openBestEggBtn','summonBossBtn','worldGrid','shopSubtitle','shopList','eggGrid','petList','bossName','bossDesc','bossLife','bossTicketBtn','weeklyBossBtn','eventList','passLevelText','passBar','passRewards','missionList','rankingGrid','skinGrid','codeInput','codeBtn','soundBtn','musicBtn','perfBtn','saveBox','saveBtn','exportBtn','importBtn','resetBtn','quickShopPanel','quickShopToggle','quickShopList','quickShopHint','openFullShopBtn'].forEach(id=>dom[id]=$('#'+id)); }
@@ -76,7 +76,14 @@
   function save(){ state.version=VERSION; state.stats.lastSeen=now(); localStorage.setItem(SAVE_KEY, JSON.stringify(state)); dirty=false; }
   function computeOffline(){ const diff=Math.min(12*HOUR, Math.max(0, now()-(state.stats.lastSeen||now()))); if(diff>60000){ const gain=Math.floor(autoGain()*diff/1000*.55); if(gain>0){ state.fruits+=gain; state.stats.total+=gain; setTimeout(()=>toast(`Você ganhou ${fmt(gain)} maçãs enquanto estava fora.`),900); } } }
 
-  function fxMode(){ if(state.settings.perf!=='auto') return state.settings.perf; return (navigator.hardwareConcurrency<=4 || innerWidth<700)?'low':'high'; }
+  function fxMode(){
+    if(state.settings.perf==='low') return 'low';
+    const smallScreen = innerWidth <= 980 || matchMedia('(pointer: coarse)').matches;
+    const weakCpu = (navigator.hardwareConcurrency || 4) <= 6;
+    const lowMemory = navigator.deviceMemory && navigator.deviceMemory <= 4;
+    if(state.settings.perf==='high' && !smallScreen) return 'high';
+    return (smallScreen || weakCpu || lowMemory) ? 'low' : 'high';
+  }
   function world(){ return worldMap[state.world]||worlds[0]; }
   function skin(){ return skins.find(x=>x.id===state.skin)||skins[0]; }
   function petMulti(){ return 1 + state.equippedPets.map(id=>state.pets.find(p=>p.uid===id)).filter(Boolean).reduce((a,p)=>a + (rarities[p.rarity]?.multi||0) * p.level, 0); }
@@ -115,8 +122,14 @@
     if(state.boss.active){ const dmg=Math.max(1,Math.floor((gain + state.up.click*4 + 10)*bossDamageMulti())); damageBoss(dmg); float(ev, `-${fmt(dmg)} HP`, true); }
     float(ev, `+${fmt(gain)}${crit?' CRIT':''}`, crit); burstClick(ev, crit); sound(state.boss.active?130:(crit?660:330), state.boss.active?.12:.08, state.boss.active?'sawtooth':'sine'); updateMissions(); dirty=true; renderHud();
   }
-  function float(ev,text,crit=false){ const r=dom.floatLayer.getBoundingClientRect(); const f=document.createElement('b'); f.className='float-text'+(crit?' crit':''); f.textContent=text; const x=ev?.clientX ? ev.clientX-r.left : r.width/2; const y=ev?.clientY ? ev.clientY-r.top : r.height/2; f.style.left=x+'px'; f.style.top=y+'px'; dom.floatLayer.appendChild(f); setTimeout(()=>f.remove(),950); }
-  function burstClick(ev,crit=false){ if(fxMode()==='low' || !visible) return; const r=dom.floatLayer.getBoundingClientRect(); const cx=(ev?.clientX?ev.clientX-r.left:r.width/2), cy=(ev?.clientY?ev.clientY-r.top:r.height/2); const n=crit?14:8; for(let i=0;i<n;i++){ const b=document.createElement('i'); b.className='click-bit'; const a=Math.random()*Math.PI*2, d=35+Math.random()*58; b.style.left=cx+'px'; b.style.top=cy+'px'; b.style.setProperty('--dx',Math.cos(a)*d+'px'); b.style.setProperty('--dy',Math.sin(a)*d+'px'); dom.floatLayer.appendChild(b); setTimeout(()=>b.remove(),700); } }
+  function float(ev,text,crit=false){
+    const low = fxMode()==='low';
+    const t = now();
+    if(low && !crit && t-lastFloat < 135) return;
+    lastFloat = t;
+    const r=dom.floatLayer.getBoundingClientRect(); const f=document.createElement('b'); f.className='float-text'+(crit?' crit':''); f.textContent=text; const x=ev?.clientX ? ev.clientX-r.left : r.width/2; const y=ev?.clientY ? ev.clientY-r.top : r.height/2; f.style.left=x+'px'; f.style.top=y+'px'; dom.floatLayer.appendChild(f); setTimeout(()=>f.remove(),low?620:950);
+  }
+  function burstClick(ev,crit=false){ if(fxMode()==='low' || !visible) return; const r=dom.floatLayer.getBoundingClientRect(); const cx=(ev?.clientX?ev.clientX-r.left:r.width/2), cy=(ev?.clientY?ev.clientY-r.top:r.height/2); const n=crit?8:4; for(let i=0;i<n;i++){ const b=document.createElement('i'); b.className='click-bit'; const a=Math.random()*Math.PI*2, d=35+Math.random()*58; b.style.left=cx+'px'; b.style.top=cy+'px'; b.style.setProperty('--dx',Math.cos(a)*d+'px'); b.style.setProperty('--dy',Math.sin(a)*d+'px'); dom.floatLayer.appendChild(b); setTimeout(()=>b.remove(),700); } }
 
   function buyUpgrade(id){ const u=upgrades.find(x=>x.id===id); if(!u) return; if(u.special){ doPrestige(); return; } if(u.cap && state.up[id]>=u.cap) return toast('Esse upgrade já está no máximo.'); const cost=upgradeCost(u); if(state.fruits<cost) return toast('Faltam maçãs para comprar.'); state.fruits-=cost; u.apply(state); sound(520,.1); toast(`${u.name} comprado.`); updateMissions(); dirty=true; render(); }
   function doPrestige(){ const cost=prestigeCost(); if(state.fruits<cost) return toast(`Prestígio precisa de ${fmt(cost)} maçãs.`); state.fruits=0; state.prestige++; state.stats.prestiges++; state.up.click=1; state.up.auto=0; state.up.crit=0; state.up.rain=0; state.stats.total+=1000; addPassXp(80); toast('Prestígio feito! Bônus permanente aumentado.'); sound(760,.18); dirty=true; render(); }
@@ -142,7 +155,7 @@
   function damageBoss(dmg){ if(!state.boss.active) return; state.boss.hp=Math.max(0,state.boss.hp-dmg); state.boss.damage+=dmg; state.stats.bossDamage+=dmg; if(state.boss.hp<=0) killBoss(); }
   function killBoss(){ const reward=Math.floor((state.boss.max/9) * (state.boss.type==='weekly'?2.2:1) * (state.event.welisonEnds>now()?2:1)); state.fruits+=reward; state.stats.total+=reward; state.stats.bossKills++; state.tickets.boss++; ensureMissions(); state.missions.daily.boss=(state.missions.daily.boss||0)+1; addPassXp(120); toast(`Boss derrotado! +${fmt(reward)} maçãs e +1 ticket.`); state.boss.active=false; state.boss.hp=0; sound(820,.25); applyVisualState(); dirty=true; render(); }
   function endBossByTime(){ const reward=Math.floor(state.boss.damage/8); state.fruits+=reward; state.stats.total+=reward; toast(`Boss fugiu. Recompensa por dano: ${fmt(reward)} maçãs.`); state.boss.active=false; state.boss.hp=0; applyVisualState(); dirty=true; render(); }
-  function spawnBossPulse(){ if(fxMode()==='low') return; for(let i=0;i<22;i++){ const p=document.createElement('span'); p.className='particle'; p.textContent=Math.random()<.7?'💀':'🔥'; p.style.left=Math.random()*100+'vw'; p.style.setProperty('--x',(Math.random()*120-60)+'px'); p.style.animationDuration=(2.4+Math.random()*2.4)+'s'; dom.particleLayer.appendChild(p); setTimeout(()=>p.remove(),5600); } }
+  function spawnBossPulse(){ if(fxMode()==='low') return; for(let i=0;i<10;i++){ const p=document.createElement('span'); p.className='particle'; p.textContent=Math.random()<.7?'💀':'🔥'; p.style.left=Math.random()*100+'vw'; p.style.setProperty('--x',(Math.random()*120-60)+'px'); p.style.animationDuration=(2.4+Math.random()*2.4)+'s'; dom.particleLayer.appendChild(p); setTimeout(()=>p.remove(),5600); } }
 
   function updateEvents(){
     const t=now(); let changed=false;
@@ -154,7 +167,7 @@
     if(t>state.event.next){ state.event.active='double'; state.event.ends=t+Math.min(12*MINUTE,5*MINUTE+state.up.rain*20000); state.event.next=t+Math.max(10*MINUTE,30*MINUTE-state.up.eventSpeed*MINUTE); if(Math.random()<.24){ state.event.rare=['auto','legend','crit'][Math.floor(Math.random()*3)]; state.event.rareEnds=t+4*MINUTE; } changed=true; spawnRain(); toast('Evento 2x ativo! Fundo, botão, partículas e multiplicador mudaram.'); sound(540,.16); }
     if(changed){ applyVisualState(); dirty=true; render(); }
   }
-  function spawnRain(symbol){ if(fxMode()==='low' || !visible) return; for(let i=0;i<34;i++){ const p=document.createElement('span'); p.className='particle'; p.textContent=symbol || (Math.random()<.78?'🍎':'🍏'); p.style.left=Math.random()*100+'vw'; p.style.setProperty('--x',(Math.random()*120-60)+'px'); p.style.animationDuration=(3+Math.random()*3)+'s'; p.style.animationDelay=(Math.random()*1.5)+'s'; dom.particleLayer.appendChild(p); setTimeout(()=>p.remove(),7000); } }
+  function spawnRain(symbol){ if(fxMode()==='low' || !visible) return; for(let i=0;i<14;i++){ const p=document.createElement('span'); p.className='particle'; p.textContent=symbol || (Math.random()<.78?'🍎':'🍏'); p.style.left=Math.random()*100+'vw'; p.style.setProperty('--x',(Math.random()*120-60)+'px'); p.style.animationDuration=(3+Math.random()*3)+'s'; p.style.animationDelay=(Math.random()*1.5)+'s'; dom.particleLayer.appendChild(p); setTimeout(()=>p.remove(),7000); } }
 
   function claimDaily(){ const k=dayKey(); if(state.daily.last===k) return toast('Presente diário já coletado hoje.'); const y=new Date(); y.setDate(y.getDate()-1); state.daily.streak=state.daily.last===dayKey(y)?state.daily.streak+1:1; state.daily.last=k; const reward=5000*state.daily.streak + state.stats.total*.01; state.fruits+=reward; state.stats.total+=reward; state.tickets.boss++; addPassXp(35); toast(`Presente: +${fmt(reward)} maçãs e +1 ticket boss.`); sound(780,.16); dirty=true; render(); }
   function addPassXp(x){ state.pass.xp+=x; }
@@ -193,7 +206,7 @@
   function renderSkins(){ dom.skinGrid.innerHTML=skins.map(s=>{ const unlocked=state.unlockedSkins[s.id], can=state.stats.total>=s.need; return `<div class="card ${unlocked?'':'locked'}"><div class="icon">${s.icon}</div><span class="tag">${unlocked?'Desbloqueada':'Precisa '+fmt(s.need)}</span><h3>${s.name}</h3><p>${state.skin===s.id?'Skin atual':'Troque a aparência da maçã principal.'}</p><button class="${unlocked?'primary':'secondary'}" data-skin="${s.id}">${unlocked?'Usar':can?'Desbloquear':'Bloqueada'}</button></div>`; }).join(''); $$('[data-skin]').forEach(b=>b.onclick=()=>unlockSkin(b.dataset.skin)); }
   function renderSettings(){ dom.soundBtn.textContent=state.settings.sound?'🔊 Som ligado':'🔇 Som desligado'; dom.musicBtn.textContent=state.settings.music?'🎵 Música ligada':'🎵 Música desligada'; dom.perfBtn.textContent='✨ Efeitos: '+(state.settings.perf==='auto'?'Auto':state.settings.perf==='low'?'Leve':'Alto'); document.body.dataset.fx=fxMode(); }
 
-  function loop(){ const t=now(), dt=Math.min(2,(t-lastTick)/1000); lastTick=t; if(visible){ const ag=autoGain()*dt; if(ag>0){ state.fruits+=ag; state.stats.total+=ag; dirty=true; } state.stats.play+=dt; } updateEvents(); if(t>state.combo.expires) state.combo.count=0; if(t-lastSave>5000 && dirty){ save(); lastSave=t; } renderHud(); requestAnimationFrame(loop); }
+  function loop(){ const t=now(), dt=Math.min(2,(t-lastTick)/1000); lastTick=t; if(visible){ const ag=autoGain()*dt; if(ag>0){ state.fruits+=ag; state.stats.total+=ag; dirty=true; } state.stats.play+=dt; } updateEvents(); if(t>state.combo.expires) state.combo.count=0; if(t-lastSave>5000 && dirty){ save(); lastSave=t; } const interval = fxMode()==='low' ? 260 : 120; if(t-lastHud>interval){ renderHud(); lastHud=t; } requestAnimationFrame(loop); }
   function init(){ bindDom(); load(); let progress=0; const loadTimer=setInterval(()=>{ progress+=18+Math.random()*16; dom.loaderBar.style.width=Math.min(100,progress)+'%'; if(progress>=100){ clearInterval(loadTimer); dom.startBtn.classList.remove('hidden'); } },160);
     dom.startBtn.onclick=()=>{ dom.loadingScreen.style.opacity='0'; setTimeout(()=>dom.loadingScreen.remove(),450); if(!state.settings.seenStory) dom.storyModal.classList.remove('hidden'); music(); };
     dom.closeStoryBtn.onclick=()=>{ state.settings.seenStory=true; dom.storyModal.classList.add('hidden'); dirty=true; };
@@ -204,7 +217,7 @@
     dom.soundBtn.onclick=()=>{state.settings.sound=!state.settings.sound; sound(500,.1); dirty=true; renderSettings();}; dom.musicBtn.onclick=()=>{state.settings.music=!state.settings.music; music(); dirty=true; renderSettings();}; dom.perfBtn.onclick=()=>{state.settings.perf=state.settings.perf==='auto'?'high':state.settings.perf==='high'?'low':'auto'; document.body.dataset.fx=fxMode(); dirty=true; renderSettings();};
     dom.saveBtn.onclick=()=>{save();toast('Jogo salvo.');}; dom.exportBtn.onclick=()=>{dom.saveBox.value=btoa(unescape(encodeURIComponent(JSON.stringify(state)))); dom.saveBox.select(); toast('Save exportado.');}; dom.importBtn.onclick=()=>{try{state=merge(defaultState(), JSON.parse(decodeURIComponent(escape(atob(dom.saveBox.value.trim()))))); normalizeState(); save(); applyVisualState(); render(); toast('Save importado.');}catch{toast('Save inválido.');}}; dom.resetBtn.onclick=()=>{ if(confirm('Resetar todo o progresso V10?')){ localStorage.removeItem(SAVE_KEY); state=defaultState(); save(); location.reload(); } };
     document.addEventListener('visibilitychange',()=>{ visible=!document.hidden; if(!visible) save(); }); window.addEventListener('beforeunload',save); window.addEventListener('resize',()=>{document.body.dataset.fx=fxMode(); renderQuickShop();});
-    setScreen(state.screen||'home'); render(); requestAnimationFrame(loop); if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }
+    setScreen(state.screen||'home'); render(); requestAnimationFrame(loop); if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=10.4.0').catch(()=>{}); }
   }
   init();
 })();
