@@ -1,30 +1,30 @@
-# Maçã Clicker Ultra V10 — World & Pets Update
+# Maçã Clicker Ultra V10.3 — Visual Remaster
 
-Versão criada por cima do V9 Cinema, com backup preservado em `legacy_v9_cinema/`.
+Versão atualizada mantendo a base da V10.2, sem remover sistemas antigos.
 
-## Adicionado
-- Mapa com 6 mundos desbloqueáveis.
-- Cada mundo tem tema, fundo, multiplicador e identidade de loja/música.
-- Pets reais com raridade, multiplicador, level, equipar e fusão.
-- Ovo comum, raro e evento.
-- Boss melhorado com vida, tempo, dano, recompensa, boss semanal e especial Welison.
-- Menu lateral animado e painéis separados.
-- Tela de loading cinematográfica e tutorial/história.
-- Ranking local salvo no navegador.
-- Códigos: V10CINEMA, WELISON5X, MACADOURADA, BOSSUPDATE.
-- Passe da Maçã com recompensas grátis e premium fake/local.
-- Otimização: save a cada 5s, pausa ao minimizar, modo FX Auto/Alto/Leve, menos partículas.
-- Sons sintéticos, música leve por mundo e controle de áudio.
-- Sistema offline: ganha maçãs ao voltar.
-- Skins: normal, dourada, azul Welison, fogo, gelo, cósmica e hacker.
-- Loja com upgrades: clique, crítico, auto coletor, chuva, global, evento, sorte pets, dano boss.
-- PWA: manifest e service worker para instalar como app no celular/PC.
+## Principais melhorias
 
-## Como rodar
-Abra `index.html` no navegador. Para PWA/service worker funcionar perfeitamente, use um servidor local:
+- Interface escura premium, mais organizada e profissional.
+- Fundo novo com atmosfera, brilho suave, profundidade e partículas leves.
+- Botões refeitos com brilho, profundidade, hover e clique.
+- Painéis, cards, HUD e menus com melhor alinhamento, espaçamento e hierarquia.
+- Loja rápida lateral preservada e mais bonita para compra fácil.
+- No celular, a loja rápida continua acessível como painel inferior expansível.
+- Área central da maçã mais impactante, com aura, glow e foco visual.
+- Boss e eventos da V10.2 preservados: caveira durante boss, vida, tempo, recompensas e mudanças visuais.
+- Responsividade refinada para PC e celular.
 
-```bash
-python -m http.server 8080
-```
+## Como publicar no GitHub Pages
 
-Depois abra `http://localhost:8080`.
+Suba os arquivos da raiz deste projeto no repositório:
+
+- index.html
+- style.css
+- script.js
+- manifest.webmanifest
+- sw.js
+- README.md
+
+Depois ative em: Settings → Pages → Deploy from a branch → main → /root.
+
+Não suba o projeto dentro de uma pasta extra. O `index.html` precisa ficar na raiz.

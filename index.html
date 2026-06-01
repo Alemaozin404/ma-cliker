@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#060814" />
-  <meta name="description" content="Maçã Clicker Ultra V10 World & Pets: mundos, pets, boss, passe, ranking, skins, sons, offline e PWA." />
-  <title>Maçã Clicker Ultra V10 World & Pets</title>
+  <meta name="description" content="Maçã Clicker Ultra V10.3: remaster visual premium, loja lateral rápida, boss corrigido, eventos reais e layout responsivo." />
+  <title>Maçã Clicker Ultra V10.3 Visual Remaster</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -13,8 +13,8 @@
   <div id="loadingScreen" class="loading-screen">
     <div class="loader-card">
       <div class="loader-logo">🍎</div>
-      <h1>Maçã Clicker <b>V10</b></h1>
-      <p>World & Pets Update</p>
+      <h1>Maçã Clicker <b>V10.3</b></h1>
+      <p>Visual Remaster • Boss & Shop Fix</p>
       <div class="loader-bar"><i id="loaderBar"></i></div>
       <button id="startBtn" class="primary big hidden">Jogar</button>
     </div>
@@ -48,7 +48,7 @@
   <main class="app-shell">
     <aside class="side panel">
       <div class="brand">
-        <span class="version">V10 WORLD & PETS</span>
+        <span class="version">V10.3 VISUAL REMASTER</span>
         <h1>Maçã<br><b>Clicker</b></h1>
         <p id="worldSubtitle">Fazenda inicial • multiplicador x1</p>
       </div>
@@ -97,6 +97,15 @@
             <span>🔥 <b id="comboText">Combo x1</b></span>
             <span>⏳ <b id="offlineText">Online agora</b></span>
             <span>🎫 Passe <b id="passMini">0</b></span>
+            <span>👑 Boss <b id="bossMini">Inativo</b></span>
+          </div>
+
+          <div id="bossAlert" class="boss-alert hidden">
+            <div>
+              <strong id="bossAlertName">Boss ativo</strong>
+              <small id="bossAlertTimer">00:00</small>
+            </div>
+            <i class="life"><em id="bossAlertLife"></em></i>
           </div>
 
           <div class="apple-zone">
@@ -127,6 +136,19 @@
       <section id="screen-codes" class="screen"><div class="screen-head"><h2>Códigos promocionais</h2><p>Use V10CINEMA, WELISON5X, MACADOURADA e BOSSUPDATE.</p></div><div class="code-box panel-soft"><input id="codeInput" placeholder="Digite o código" /><button id="codeBtn" class="primary">Resgatar</button></div></section>
       <section id="screen-settings" class="screen"><div class="screen-head"><h2>Configurações</h2><p>Som, música, performance, backup, PWA e save.</p></div><div class="settings-grid"><div class="panel-soft"><h3>Áudio e performance</h3><button id="soundBtn" class="secondary">🔇 Som desligado</button><button id="musicBtn" class="secondary">🎵 Música desligada</button><button id="perfBtn" class="secondary">✨ Efeitos: Auto</button></div><div class="panel-soft"><h3>Backup</h3><textarea id="saveBox" placeholder="Exportar/importar save"></textarea><div class="row"><button id="saveBtn" class="secondary">Salvar</button><button id="exportBtn" class="secondary">Exportar</button><button id="importBtn" class="secondary">Importar</button><button id="resetBtn" class="danger">Resetar</button></div></div></div></section>
     </section>
+
+    <aside id="quickShopPanel" class="quick-shop panel" aria-label="Loja rápida">
+      <div class="quick-shop-head">
+        <div>
+          <span class="eyebrow">compra fácil</span>
+          <h2>Loja rápida</h2>
+        </div>
+        <button id="quickShopToggle" class="secondary mini">🛒</button>
+      </div>
+      <p id="quickShopHint">Upgrades principais sempre ao lado para comprar sem procurar.</p>
+      <div id="quickShopList" class="quick-shop-list"></div>
+      <button id="openFullShopBtn" class="primary full">Abrir loja completa</button>
+    </aside>
   </main>
 
   <script src="script.js"></script>
