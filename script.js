@@ -1096,3 +1096,476 @@ setInterval(() => {
   state.stats.startedAt = Date.now();
   saveGame("Salvo automaticamente.");
 }, 5000);
+
+
+/* =========================
+   ULTRA V4 ADD-ON
+   Não remove o sistema antigo.
+========================= */
+(() => {
+  const V4_KEY = "maca_clicker_ultra_v4_addon";
+
+  const v4 = {
+    missionsDate: "",
+    missionBase: {},
+    claimed: {},
+    codes: {},
+    inventory: {
+      boost2x: 0,
+      clickBoost: 0,
+      autoBoost: 0,
+      eventTicket: 0,
+      rainTicket: 0,
+      crystalFragment: 0,
+      bossTicket: 1
+    },
+    boosts: {
+      clickUntil: 0,
+      autoUntil: 0
+    },
+    visual: {
+      whiteAura: false,
+      blueAura: false,
+      goldAura: false,
+      extraRing: false,
+      rareBg: false
+    },
+    boss: {
+      active: false,
+      hp: 0,
+      maxHp: 0,
+      endsAt: 0
+    }
+  };
+
+  const itemNames = {
+    boost2x: "Boost 2x",
+    clickBoost: "Boost de Clique",
+    autoBoost: "Boost Automático",
+    eventTicket: "Ticket de Evento",
+    rainTicket: "Ticket de Chuva",
+    crystalFragment: "Fragmento de Cristal",
+    bossTicket: "Ticket de Boss"
+  };
+
+  const codes = {
+    WELISON5X: { apples: 5000, item: "eventTicket", amount: 1, desc: "5.000 frutas + 1 ticket de evento" },
+    SABADO1530: { apples: 1530, item: "rainTicket", amount: 1, desc: "1.530 frutas + 1 ticket de chuva" },
+    ULTRA: { apples: 10000, item: "boost2x", amount: 1, desc: "10.000 frutas + boost 2x" },
+    FREEBOOST: { item: "clickBoost", amount: 2, desc: "2 boosts de clique" },
+    CRISTAL: { item: "crystalFragment", amount: 5, desc: "5 fragmentos de cristal" }
+  };
+
+  const visualItems = [
+    ["whiteAura", "Aura Branca", 2500],
+    ["blueAura", "Aura Azul", 7500],
+    ["goldAura", "Aura Dourada", 15000],
+    ["extraRing", "Anel Extra", 22000],
+    ["rareBg", "Fundo Raro", 40000]
+  ];
+
+  function loadV4() {
+    try {
+      Object.assign(v4, JSON.parse(localStorage.getItem(V4_KEY) || "{}"));
+      v4.inventory = { boost2x:0, clickBoost:0, autoBoost:0, eventTicket:0, rainTicket:0, crystalFragment:0, bossTicket:1, ...(v4.inventory || {}) };
+      v4.boosts = { clickUntil:0, autoUntil:0, ...(v4.boosts || {}) };
+      v4.visual = { whiteAura:false, blueAura:false, goldAura:false, extraRing:false, rareBg:false, ...(v4.visual || {}) };
+      v4.boss = { active:false, hp:0, maxHp:0, endsAt:0, ...(v4.boss || {}) };
+    } catch {}
+  }
+
+  function saveV4() {
+    localStorage.setItem(V4_KEY, JSON.stringify(v4));
+  }
+
+  function todayKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+
+  function fmt(n) {
+    if (typeof formatNumber === "function") return formatNumber(n);
+    return Math.floor(n).toLocaleString("pt-BR");
+  }
+
+  function pop(msg) {
+    if (typeof toast === "function") toast(msg);
+    else alert(msg);
+  }
+
+  function ensureMissions() {
+    const key = todayKey();
+    if (v4.missionsDate !== key) {
+      v4.missionsDate = key;
+      v4.claimed = {};
+      v4.missionBase = {
+        clicks: state?.stats?.totalClicks || 0,
+        fruits: state?.stats?.totalFruitsCollected || 0,
+        buys: state?.stats?.totalPurchases || 0,
+        events: state?.stats?.totalEventsUsed || 0,
+        prestiges: state?.stats?.totalPrestiges || 0
+      };
+      saveV4();
+    }
+  }
+
+  function missionData() {
+    ensureMissions();
+    const s = state.stats;
+    return [
+      { id:"click500", title:"Clique 500 vezes hoje", now:(s.totalClicks||0)-(v4.missionBase.clicks||0), goal:500, reward:{ apples:2500 } },
+      { id:"gain10k", title:"Ganhe 10.000 frutas hoje", now:(s.totalFruitsCollected||0)-(v4.missionBase.fruits||0), goal:10000, reward:{ apples:5000 } },
+      { id:"buy5", title:"Compre 5 melhorias", now:(s.totalPurchases||0)-(v4.missionBase.buys||0), goal:5, reward:{ item:"boost2x", amount:1 } },
+      { id:"event1", title:"Use 1 evento", now:(s.totalEventsUsed||0)-(v4.missionBase.events||0), goal:1, reward:{ item:"eventTicket", amount:1 } },
+      { id:"prestige1", title:"Faça 1 prestígio", now:(s.totalPrestiges||0)-(v4.missionBase.prestiges||0), goal:1, reward:{ item:"crystalFragment", amount:2 } }
+    ];
+  }
+
+  function rewardText(r) {
+    const arr = [];
+    if (r.apples) arr.push(`${fmt(r.apples)} frutas`);
+    if (r.item) arr.push(`${r.amount || 1}x ${itemNames[r.item] || r.item}`);
+    return arr.join(" + ");
+  }
+
+  function giveReward(r) {
+    if (r.apples) {
+      state.apples += r.apples;
+      state.stats.totalFruitsCollected += r.apples;
+    }
+    if (r.item) v4.inventory[r.item] = (v4.inventory[r.item] || 0) + (r.amount || 1);
+    saveV4();
+    if (typeof saveGame === "function") saveGame("Ultra V4 salvo.");
+  }
+
+  function renderMissions() {
+    const box = document.getElementById("v4-missions");
+    if (!box) return;
+    box.innerHTML = `<p class="eyebrow">missões diárias · ${v4.missionsDate || todayKey()}</p>`;
+    for (const m of missionData()) {
+      const done = m.now >= m.goal;
+      const claimed = !!v4.claimed[m.id];
+      const pct = Math.max(0, Math.min(100, (m.now / m.goal) * 100));
+      const card = document.createElement("div");
+      card.className = `v4-card ${claimed ? "done" : ""}`;
+      card.innerHTML = `
+        <h3>${m.title}</h3>
+        <p>${fmt(Math.max(0,m.now))}/${fmt(m.goal)} · Recompensa: ${rewardText(m.reward)}</p>
+        <div class="v4-progress"><div style="width:${pct}%"></div></div>
+        <button ${done && !claimed ? "" : "disabled"}>${claimed ? "Coletado" : done ? "Coletar" : "Em progresso"}</button>
+      `;
+      card.querySelector("button").onclick = () => {
+        if (!done || claimed) return;
+        v4.claimed[m.id] = true;
+        giveReward(m.reward);
+        pop(`Missão concluída: ${m.title}`);
+        renderAllV4();
+      };
+      box.appendChild(card);
+    }
+  }
+
+  function renderCodes() {
+    const box = document.getElementById("v4-codes");
+    if (!box) return;
+    box.innerHTML = `
+      <div class="v4-card">
+        <h3>Códigos secretos</h3>
+        <p>Use: WELISON5X, SABADO1530, ULTRA, FREEBOOST, CRISTAL</p>
+        <div class="v4-code-row">
+          <input id="v4CodeInput" placeholder="Digite o código aqui" />
+          <button id="v4Redeem">Resgatar</button>
+        </div>
+      </div>
+    `;
+    box.querySelector("#v4Redeem").onclick = () => {
+      const input = box.querySelector("#v4CodeInput");
+      const code = (input.value || "").trim().toUpperCase();
+      if (!codes[code]) return pop("Código inválido.");
+      if (v4.codes[code]) return pop("Esse código já foi usado.");
+      v4.codes[code] = true;
+      giveReward(codes[code]);
+      input.value = "";
+      pop(`Código resgatado: ${codes[code].desc}`);
+      renderAllV4();
+    };
+  }
+
+  function renderCalendar() {
+    const box = document.getElementById("v4-calendar");
+    if (!box) return;
+    const now = Date.now();
+    const welison = typeof getNextWelisonSaturday === "function" ? getNextWelisonSaturday(new Date()).getTime() : now;
+    const rows = [
+      ["Evento 2x", state.eventActive ? `Ativo · termina em ${formatTime(state.eventEndsAt - now)}` : `Começa em ${formatTime(state.nextEventAt - now)}`, state.eventActive],
+      ["Welison 5x", state.welisonEventActive ? `Ativo · termina em ${formatTime(state.welisonEventEndsAt - now)}` : `Sábado 15:30 · começa em ${formatTime(welison - now)}`, state.welisonEventActive],
+      ["Evento raro", state.rareEvent ? `Ativo · termina em ${formatTime(state.rareEventEndsAt - now)}` : "Aleatório, verificado a cada minuto", !!state.rareEvent],
+      ["Fruta Gigante", v4.boss.active ? `Ativa · HP ${fmt(v4.boss.hp)} / ${fmt(v4.boss.maxHp)}` : "Use Ticket de Boss para invocar", v4.boss.active]
+    ];
+    box.innerHTML = rows.map(r => `<div class="v4-card ${r[2] ? "active" : ""}"><h3>${r[0]}</h3><p>${r[1]}</p></div>`).join("");
+    const boss = document.createElement("div");
+    boss.className = "v4-card";
+    const hpPct = v4.boss.maxHp ? Math.max(0, Math.min(100, (v4.boss.hp/v4.boss.maxHp)*100)) : 0;
+    boss.innerHTML = `
+      <h3>Boss / Fruta Gigante</h3>
+      <p>${v4.boss.active ? "Clique na fruta para derrotar antes do tempo acabar." : `Tickets: ${v4.inventory.bossTicket || 0}`}</p>
+      <div class="v4-progress"><div style="width:${hpPct}%"></div></div>
+      <button id="v4SpawnBoss">${v4.boss.active ? "Boss ativo" : "Invocar Boss"}</button>
+    `;
+    box.appendChild(boss);
+    boss.querySelector("#v4SpawnBoss").onclick = spawnBoss;
+  }
+
+  function renderInventory() {
+    const box = document.getElementById("v4-inventory");
+    if (!box) return;
+    box.innerHTML = "";
+    for (const [id, name] of Object.entries(itemNames)) {
+      const amount = v4.inventory[id] || 0;
+      const card = document.createElement("div");
+      card.className = "v4-card v4-inventory-card";
+      card.innerHTML = `
+        <div><h3>${name} x${amount}</h3><p>${itemDescription(id)}</p></div>
+        <button ${amount > 0 && canUseItem(id) ? "" : "disabled"}>${canUseItem(id) ? "Usar" : "Guardar"}</button>
+      `;
+      card.querySelector("button").onclick = () => useItem(id);
+      box.appendChild(card);
+    }
+  }
+
+  function itemDescription(id) {
+    return {
+      boost2x:"Ativa 2x geral por 5 minutos.",
+      clickBoost:"Dobra o clique por 5 minutos.",
+      autoBoost:"Dobra o automático por 5 minutos.",
+      eventTicket:"Ativa evento 2x agora.",
+      rainTicket:"Ativa chuva de frutas.",
+      crystalFragment:"Material raro para futuras evoluções.",
+      bossTicket:"Invoca a Fruta Gigante."
+    }[id] || "";
+  }
+
+  function canUseItem(id) {
+    return !["crystalFragment"].includes(id);
+  }
+
+  function useItem(id) {
+    if ((v4.inventory[id] || 0) <= 0) return;
+    let ok = true;
+    const now = Date.now();
+    if (id === "boost2x" || id === "clickBoost") v4.boosts.clickUntil = Math.max(now, v4.boosts.clickUntil || 0) + 5*60*1000;
+    else if (id === "autoBoost") v4.boosts.autoUntil = Math.max(now, v4.boosts.autoUntil || 0) + 5*60*1000;
+    else if (id === "eventTicket") {
+      if (state.eventActive) ok = false;
+      else {
+        state.eventActive = true;
+        state.eventEndsAt = now + (typeof getEventDuration === "function" ? getEventDuration() : 5*60*1000);
+        state.nextEventAt = state.eventEndsAt + (typeof getEventInterval === "function" ? getEventInterval() : 30*60*1000);
+        state.stats.totalEventsUsed += 1;
+        if (typeof startTwoXAppleRain === "function") startTwoXAppleRain();
+      }
+    }
+    else if (id === "rainTicket") {
+      if (state.rainActive) ok = false;
+      else {
+        state.rainActive = true;
+        state.rainTime = 40;
+        if (typeof startVisualRain === "function") startVisualRain();
+      }
+    }
+    else if (id === "bossTicket") ok = spawnBoss(false) !== false;
+    if (!ok) return pop("Não dá para usar agora.");
+    v4.inventory[id] -= 1;
+    saveV4();
+    if (typeof saveGame === "function") saveGame("Item usado.");
+    pop(`${itemNames[id]} usado.`);
+    renderAllV4();
+  }
+
+  function renderVisual() {
+    const box = document.getElementById("v4-visual");
+    if (!box) return;
+    box.innerHTML = "";
+    for (const [id, name, cost] of visualItems) {
+      const bought = !!v4.visual[id];
+      const card = document.createElement("div");
+      card.className = `v4-card ${bought ? "done" : ""}`;
+      card.innerHTML = `<h3>${name}</h3><p>Custo: ${fmt(cost)} frutas</p><button ${bought ? "disabled" : ""}>${bought ? "Comprado" : "Comprar"}</button>`;
+      card.querySelector("button").onclick = () => {
+        if (bought) return;
+        if (state.apples < cost) return pop("Frutas insuficientes.");
+        state.apples -= cost;
+        v4.visual[id] = true;
+        saveV4();
+        pop(`${name} comprado.`);
+        renderAllV4();
+      };
+      box.appendChild(card);
+    }
+  }
+
+  function renderSaveTools() {
+    const box = document.getElementById("v4-save");
+    if (!box) return;
+    box.innerHTML = `
+      <div class="v4-tools">
+        <button id="v4Export">Exportar Save</button>
+        <button id="v4Copy">Copiar Código</button>
+        <button id="v4Import">Importar Save</button>
+        <textarea id="v4SaveBox" placeholder="Cole o código do save aqui..."></textarea>
+      </div>
+    `;
+    const area = box.querySelector("#v4SaveBox");
+    const exportNow = () => {
+      const payload = { core: state, addon: v4 };
+      area.value = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+      pop("Save exportado.");
+    };
+    box.querySelector("#v4Export").onclick = exportNow;
+    box.querySelector("#v4Copy").onclick = () => {
+      exportNow();
+      navigator.clipboard?.writeText(area.value);
+      pop("Código copiado.");
+    };
+    box.querySelector("#v4Import").onclick = () => {
+      try {
+        const payload = JSON.parse(decodeURIComponent(escape(atob(area.value.trim()))));
+        if (payload.core) localStorage.setItem(SAVE_KEY, JSON.stringify(payload.core));
+        if (payload.addon) localStorage.setItem(V4_KEY, JSON.stringify(payload.addon));
+        pop("Save importado. Recarregando...");
+        setTimeout(() => location.reload(), 700);
+      } catch {
+        pop("Save inválido.");
+      }
+    };
+  }
+
+  function spawnBoss(useTicket = true) {
+    if (v4.boss.active) return false;
+    if (useTicket !== false) {
+      if ((v4.inventory.bossTicket || 0) <= 0) return pop("Você precisa de Ticket de Boss."), false;
+      v4.inventory.bossTicket -= 1;
+    }
+    const power = typeof getClickGain === "function" ? getClickGain() : 100;
+    v4.boss.active = true;
+    v4.boss.maxHp = Math.max(5000, power * 80);
+    v4.boss.hp = v4.boss.maxHp;
+    v4.boss.endsAt = Date.now() + 60*1000;
+    pop("Fruta Gigante apareceu por 60 segundos!");
+    saveV4();
+    return true;
+  }
+
+  function bossTick() {
+    if (!v4.boss.active) return;
+    if (Date.now() > v4.boss.endsAt) {
+      v4.boss.active = false;
+      pop("A Fruta Gigante fugiu.");
+      saveV4();
+    }
+  }
+
+  function damageBoss(amount) {
+    if (!v4.boss.active) return;
+    v4.boss.hp -= amount;
+    if (v4.boss.hp <= 0) {
+      const reward = Math.max(10000, v4.boss.maxHp * .35);
+      state.apples += reward;
+      state.stats.totalFruitsCollected += reward;
+      v4.inventory.crystalFragment = (v4.inventory.crystalFragment || 0) + 3;
+      v4.boss.active = false;
+      pop(`Boss derrotado! +${fmt(reward)} frutas + 3 cristais.`);
+      saveV4();
+      if (typeof saveGame === "function") saveGame("Boss derrotado.");
+    }
+  }
+
+  function applyVisual() {
+    document.body.classList.toggle("v4-white-aura", !!v4.visual.whiteAura);
+    document.body.classList.toggle("v4-blue-aura", !!v4.visual.blueAura);
+    document.body.classList.toggle("v4-gold-aura", !!v4.visual.goldAura);
+    document.body.classList.toggle("v4-extra-ring", !!v4.visual.extraRing);
+    document.body.classList.toggle("v4-rare-bg", !!v4.visual.rareBg);
+    document.body.classList.toggle("v4-boss-active", !!v4.boss.active);
+  }
+
+  function renderAllV4() {
+    ensureMissions();
+    renderMissions();
+    renderCodes();
+    renderCalendar();
+    renderInventory();
+    renderVisual();
+    renderSaveTools();
+    applyVisual();
+  }
+
+  function setupTabs() {
+    document.querySelectorAll(".v4-tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".v4-tab").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".v4-content").forEach(c => c.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(`v4-${btn.dataset.v4}`)?.classList.add("active");
+        renderAllV4();
+      });
+    });
+
+    document.querySelectorAll(".mobile-nav-v4 button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tab = btn.dataset.go;
+        if (["missions","calendar","inventory"].includes(tab)) {
+          document.querySelector(`.v4-tab[data-v4="${tab}"]`)?.click();
+          document.getElementById("v4Panel")?.scrollIntoView({behavior:"smooth", block:"start"});
+        } else {
+          document.querySelector(`.tab[data-tab="${tab}"]`)?.click();
+          document.querySelector(".side-panel")?.scrollIntoView({behavior:"smooth", block:"start"});
+        }
+      });
+    });
+  }
+
+  function patchCore() {
+    if (window.__v4Patched) return;
+    window.__v4Patched = true;
+
+    const oldClick = window.clickFruit;
+    if (typeof oldClick === "function") {
+      window.clickFruit = function(event) {
+        const before = state.apples;
+        oldClick(event);
+        const gain = Math.max(0, state.apples - before);
+        damageBoss(gain || (typeof getClickGain === "function" ? getClickGain() : 1));
+        renderAllV4();
+      };
+      const btn = document.getElementById("appleButton");
+      if (btn) {
+        btn.replaceWith(btn.cloneNode(true));
+        const newBtn = document.getElementById("appleButton");
+        newBtn.addEventListener("click", window.clickFruit);
+      }
+    }
+
+    const oldGetActive = window.getActiveMultipliers;
+    if (typeof oldGetActive === "function") {
+      window.getActiveMultipliers = function(type = "click") {
+        const list = oldGetActive(type);
+        if (type === "click" && Date.now() < v4.boosts.clickUntil) list.push({ id:"v4Click", label:"Boost Clique", value:2 });
+        if (type === "auto" && Date.now() < v4.boosts.autoUntil) list.push({ id:"v4Auto", label:"Boost Auto", value:2 });
+        return list;
+      };
+    }
+  }
+
+  loadV4();
+  setupTabs();
+  patchCore();
+  renderAllV4();
+
+  setInterval(() => {
+    bossTick();
+    renderAllV4();
+  }, 1000);
+
+  setInterval(saveV4, 5000);
+})();

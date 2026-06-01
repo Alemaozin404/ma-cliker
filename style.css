@@ -1443,3 +1443,197 @@ body.event-active .event-pill {
   font-weight: 900;
   text-align: center;
 }
+
+
+/* =========================
+   ULTRA V4 ADD-ON
+========================= */
+.v4-panel {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 14px;
+  background: rgba(0,0,0,.32);
+  position: relative;
+  z-index: 3;
+}
+
+.v4-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.v4-tab {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.04);
+  color: var(--muted);
+  border-radius: 14px;
+  padding: 10px 6px;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.v4-tab.active,
+.v4-tab:hover {
+  background: #fff;
+  color: #000;
+}
+
+.v4-content {
+  display: none;
+}
+
+.v4-content.active {
+  display: grid;
+  gap: 10px;
+}
+
+.v4-card {
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.04);
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.v4-card.done,
+.v4-card.active {
+  border-color: rgba(255,255,255,.55);
+  background: rgba(255,255,255,.08);
+}
+
+.v4-card h3 {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.v4-card p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.v4-progress {
+  height: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,.42);
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.v4-progress div {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #777, #fff);
+}
+
+.v4-card button,
+.v4-tools button {
+  border: 1px solid var(--line-strong);
+  background: #111;
+  color: #fff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-weight: 900;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.v4-card button:hover,
+.v4-tools button:hover {
+  background: #fff;
+  color: #000;
+}
+
+.v4-card button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.v4-code-row,
+.v4-tools {
+  display: grid;
+  gap: 8px;
+}
+
+.v4-code-row input,
+.v4-tools textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,.45);
+  color: #fff;
+  border-radius: 14px;
+  padding: 12px;
+  outline: none;
+  font-weight: 800;
+}
+
+.v4-tools textarea {
+  min-height: 130px;
+  resize: vertical;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.v4-inventory-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.v4-boss-active .apple-button {
+  animation: bossPulseV4 1s ease-in-out infinite;
+}
+
+.v4-white-aura .apple-button { filter: drop-shadow(0 0 28px rgba(255,255,255,.35)); }
+.v4-blue-aura .apple-button { filter: drop-shadow(0 0 30px rgba(80,170,255,.55)); }
+.v4-gold-aura .apple-button { filter: drop-shadow(0 0 30px rgba(255,215,80,.45)); }
+.v4-extra-ring .ring-three { border-color: rgba(255,255,255,.3); border-width: 2px; }
+.v4-rare-bg .game-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 55%, rgba(255,255,255,.08), transparent 52%);
+}
+
+.mobile-nav-v4 { display: none; }
+
+@keyframes bossPulseV4 {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@media (max-width: 640px) {
+  body { padding-bottom: 74px; }
+  .mobile-nav-v4 {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    z-index: 90;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: 22px;
+    background: rgba(0,0,0,.82);
+    backdrop-filter: blur(14px);
+  }
+  .mobile-nav-v4 button {
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.06);
+    color: #fff;
+    border-radius: 14px;
+    padding: 10px 4px;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  .v4-tabs { grid-template-columns: repeat(2, 1fr); }
+  .v4-inventory-card { grid-template-columns: 1fr; }
+}

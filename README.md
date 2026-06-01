@@ -131,3 +131,25 @@ Atualização adicionada:
   - evento raro;
   - crítico;
   - chuva.
+
+
+# Maçã Clicker Ultra V4 Full
+
+Adicionado sem remover o sistema antigo:
+
+- Missões diárias;
+- Sistema de códigos/cupons;
+- Calendário de eventos;
+- Inventário de itens;
+- Loja visual;
+- Boss / Fruta Gigante;
+- Exportar, copiar e importar save;
+- Barra mobile inferior;
+- Novos itens e recompensas.
+
+Códigos disponíveis:
+- WELISON5X
+- SABADO1530
+- ULTRA
+- FREEBOOST
+- CRISTAL
