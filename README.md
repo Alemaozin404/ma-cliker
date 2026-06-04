@@ -137,3 +137,13 @@ Atualização feita em cima do projeto existente, preservando save e sistemas an
 
 ### Sistemas preservados
 Clique, loja rápida, loja completa, pets, ovos, boss, eventos, mundos, ranking local, passe, skins, códigos, configurações, save local, importação/exportação e compatibilidade com GitHub Pages foram mantidos.
+
+
+## V11.0 — Boss Ticket Shop Only
+
+- Ticket de boss agora é consumido ao invocar boss normal ou semanal.
+- Boss derrotado não devolve ticket e não premia ticket.
+- Presente diário, passe e códigos não entregam mais ticket de boss.
+- Ticket de boss ficou exclusivo da loja rápida/loja completa.
+- Cada aparição de boss agora possui temporizador de 1 hora.
+- Cache e query strings atualizados para evitar carregar versão antiga.
