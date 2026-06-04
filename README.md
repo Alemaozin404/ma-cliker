@@ -1,4 +1,4 @@
-# 🍎 Maçã Clicker Ultra — Visual Remaster V10.4
+# 🍎 Maçã Clicker Ultra — Cinema Luxe V10.6
 
 > **Clique. Evolua. Desbloqueie mundos. Enfrente bosses. Domine o ranking.**
 
@@ -82,9 +82,9 @@ A versão mobile recebeu foco em otimização, reduzindo efeitos pesados para ev
 
 ---
 
-## 🌟 Visual Remaster
+## 🌟 Cinema Luxe
 
-A versão Visual Remaster melhora a apresentação geral do jogo, com:
+A versão Cinema Luxe melhora a apresentação geral do jogo, com:
 
 - fundo mais bonito e atmosférico;
 - cards mais organizados;
@@ -118,3 +118,22 @@ O objetivo é transformar o projeto em algo com mais identidade, mais brilho e m
 ---
 
 olua. Enfrente o boss. Domine o jogo.**
+
+## V10.8 Cinema Luxe Ultra
+
+Atualização feita em cima do projeto existente, preservando save e sistemas antigos. Esta versão reforça o visual premium/cinematográfico sem recriar o jogo do zero.
+
+### Melhorias principais
+- Atualização geral de versão para **V10.8 Cinema Luxe Ultra**.
+- Botões principais da home reduzidos e refinados: presente diário, abrir melhor ovo e invocar boss.
+- Fundo cinematográfico reforçado com aurora, vinheta, scanline sutil, grão visual e profundidade.
+- Maçã principal com aura extra, anéis, brilho, shine e presença mais premium.
+- Tutorial expandido para 6 etapas com destaque visual do elemento da tela e botão Próximo.
+- Overlay cinematográfico de boss com texto **BOSS INICIADO**, luz vermelha, grão e barra dramática.
+- Card de código com animação de sucesso/erro e brilho de recompensa.
+- Microinterações reforçadas em botões, cards, HUD e loja rápida.
+- Modo de performance preservado: Auto, Alto e Leve.
+- Cache/service worker atualizado para `maca-v10-8-cinema-luxe-ultra`.
+
+### Sistemas preservados
+Clique, loja rápida, loja completa, pets, ovos, boss, eventos, mundos, ranking local, passe, skins, códigos, configurações, save local, importação/exportação e compatibilidade com GitHub Pages foram mantidos.

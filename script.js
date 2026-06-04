@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const VERSION = '10.4.0-pc-mobile-perf-fix';
+  const VERSION = '10.9.0-cinema-supreme-directors-cut';
   const SAVE_KEY = 'maca_clicker_v10_world_pets_save';
   const RANK_KEY = 'maca_clicker_v10_ranking';
   const MINUTE = 60000, HOUR = 3600000;
@@ -63,15 +63,15 @@
     missions:{dailyKey:'',weeklyKey:'',daily:{},weekly:{},dailyClaimed:{},weeklyClaimed:{}},
     stats:{clicks:0,total:0,bestClick:0,bossDamage:0,bossKills:0,prestiges:0,started:now(),play:0,lastSeen:now()},
     combo:{count:0,best:0,expires:0}, daily:{last:'',streak:0}, codes:{},
-    settings:{sound:false,music:false,perf:'auto',seenStory:false,quickCollapsed:false}, screen:'home'
+    settings:{sound:false,music:false,perf:'auto',seenStory:false,quickCollapsed:false,introSeen:false,codeShowSeen:false,cinemaStamp:''}, screen:'home'
   });
-  let state = defaultState(), dirty = true, lastTick = now(), lastSave = now(), lastHud = 0, lastFloat = 0, audio = null, musicTimer = null, visible = true, lastPetSig = '';
+  let state = defaultState(), dirty = true, lastTick = now(), lastSave = now(), lastHud = 0, lastFloat = 0, audio = null, musicTimer = null, visible = true, lastPetSig = '', ambientTimer = 0, hudMemory = {}, introTimer = null, tutorialTimer = null, tutorialIndex = 0, featuredCode = '';
   const dom = {};
 
-  function bindDom(){ ['loadingScreen','loaderBar','startBtn','storyModal','closeStoryBtn','toastStack','particleLayer','mainNav','mobileMenuBtn','worldSubtitle','eventTitle','eventHint','fruitCount','clickStat','autoStat','multiStat','petStat','worldStat','worldIcon','worldName','comboText','offlineText','passMini','bossMini','bossAlert','bossAlertName','bossAlertTimer','bossAlertLife','petOrbit','appleBtn','appleSkin','floatLayer','claimDailyBtn','openBestEggBtn','summonBossBtn','worldGrid','shopSubtitle','shopList','eggGrid','petList','bossName','bossDesc','bossLife','bossTicketBtn','weeklyBossBtn','eventList','passLevelText','passBar','passRewards','missionList','rankingGrid','skinGrid','codeInput','codeBtn','soundBtn','musicBtn','perfBtn','saveBox','saveBtn','exportBtn','importBtn','resetBtn','quickShopPanel','quickShopToggle','quickShopList','quickShopHint','openFullShopBtn'].forEach(id=>dom[id]=$('#'+id)); }
+  function bindDom(){ ['loadingScreen','loaderBar','startBtn','introCinematic','introTitle','introLine','introProgress','skipIntroBtn','introContinueBtn','storyModal','closeStoryBtn','tutorialTitle','tutorialDesc','tutorialProgress','tutorialStepsWrap','tutorialSkipBtn','bossCinematic','bossCinematicName','tutorialSpotlight','toastStack','particleLayer','mainNav','mobileMenuBtn','worldSubtitle','eventTitle','eventHint','fruitCount','clickStat','autoStat','multiStat','petStat','worldStat','worldIcon','worldName','comboText','offlineText','passMini','bossMini','bossAlert','bossAlertName','bossAlertTimer','bossAlertLife','petOrbit','appleBtn','appleSkin','floatLayer','claimDailyBtn','openBestEggBtn','summonBossBtn','worldGrid','shopSubtitle','shopList','eggGrid','petList','bossName','bossDesc','bossLife','bossTicketBtn','weeklyBossBtn','eventList','passLevelText','passBar','passRewards','missionList','rankingGrid','skinGrid','featuredCodeLabel','featuredCodeDesc','featuredCodeChip','revealCodeBtn','useFeaturedCodeBtn','codeShowcase','codeInput','codeBtn','soundBtn','musicBtn','perfBtn','saveBox','saveBtn','exportBtn','importBtn','resetBtn','quickShopPanel','quickShopToggle','quickShopList','quickShopHint','openFullShopBtn'].forEach(id=>dom[id]=$('#'+id)); }
   function merge(base, extra){ for(const k in extra||{}){ if(extra[k] && typeof extra[k]==='object' && !Array.isArray(extra[k]) && base[k]) merge(base[k], extra[k]); else base[k]=extra[k]; } return base; }
   function load(){ try{ state=merge(defaultState(), JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')); }catch{ state=defaultState(); } migrateV9IfNeeded(); normalizeState(); computeOffline(); ensureMissions(); applyVisualState(); }
-  function normalizeState(){ state.tickets ||= {boss:2}; state.boss ||= defaultState().boss; state.event ||= defaultState().event; state.settings ||= defaultState().settings; state.settings.quickCollapsed ||= false; state.missions.dailyClaimed ||= {}; state.missions.weeklyClaimed ||= {}; if(!state.event.next || state.event.next < now()-HOUR) state.event.next = now()+Math.max(5*MINUTE,30*MINUTE-state.up.eventSpeed*MINUTE); }
+  function normalizeState(){ state.tickets ||= {boss:2}; state.boss ||= defaultState().boss; state.event ||= defaultState().event; state.settings ||= defaultState().settings; state.settings.quickCollapsed ||= false; if(state.settings.cinemaStamp!==VERSION){ state.settings.introSeen=false; state.settings.seenStory=false; state.settings.codeShowSeen=false; state.settings.cinemaStamp=VERSION; } state.missions.dailyClaimed ||= {}; state.missions.weeklyClaimed ||= {}; if(!state.event.next || state.event.next < now()-HOUR) state.event.next = now()+Math.max(5*MINUTE,30*MINUTE-state.up.eventSpeed*MINUTE); }
   function migrateV9IfNeeded(){ if(state.stats.total>0) return; try{ const old=JSON.parse(localStorage.getItem('maca_clicker_v9_cinema_save')||'null'); if(!old) return; state.fruits=old.fruits||0; state.stats.total=old.stats?.total||state.fruits; state.stats.clicks=old.stats?.clicks||0; state.prestige=old.prestige||0; state.up.click=old.clickPower||1; state.up.auto=old.autoCollector||0; state.up.global=Math.max(0,(old.multiplier||1)-1); setTimeout(()=>toast('Progresso antigo importado e preservado.'),700); }catch{} }
   function save(){ state.version=VERSION; state.stats.lastSeen=now(); localStorage.setItem(SAVE_KEY, JSON.stringify(state)); dirty=false; }
   function computeOffline(){ const diff=Math.min(12*HOUR, Math.max(0, now()-(state.stats.lastSeen||now()))); if(diff>60000){ const gain=Math.floor(autoGain()*diff/1000*.55); if(gain>0){ state.fruits+=gain; state.stats.total+=gain; setTimeout(()=>toast(`Você ganhou ${fmt(gain)} maçãs enquanto estava fora.`),900); } } }
@@ -101,6 +101,121 @@
   function music(on=state.settings.music){ clearInterval(musicTimer); if(!on) return; musicTimer=setInterval(()=>{ const w=world(); sound(w.music,.15,'triangle'); setTimeout(()=>sound(w.music*1.5,.12,'triangle'),180); },2200); }
   function toast(text){ if(!dom.toastStack) return; const t=document.createElement('div'); t.className='toast'; t.textContent=text; dom.toastStack.appendChild(t); setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-8px)'},2600); setTimeout(()=>t.remove(),3100); }
 
+
+  function createProgressDots(el,count){ if(!el) return []; el.innerHTML=''; const arr=[]; for(let i=0;i<count;i++){ const d=document.createElement('i'); el.appendChild(d); arr.push(d); } return arr; }
+
+  function playIntro(){
+    if(!dom.introCinematic) return finishIntro();
+    const slides=[
+      ['Bem-vindo ao Maçã Clicker Ultra.','A luz acende, a maçã desperta e cada clique vira espetáculo.'],
+      ['Colete, evolua e domine mundos cinematográficos.','Cada clique aproxima você de um império maior.'],
+      ['Pets, bosses, códigos e recompensas entram em cena.','Domine o pomar como se cada tela fosse uma cena final.']
+    ];
+    const dots=createProgressDots(dom.introProgress, slides.length);
+    let i=0;
+    dom.introCinematic.classList.remove('hidden');
+    dom.introContinueBtn.classList.add('hidden');
+    const show=()=>{
+      dom.introTitle.textContent=slides[i][0];
+      dom.introLine.textContent=slides[i][1];
+      dots.forEach((d,idx)=>{ d.className=''; if(idx<i) d.classList.add('done'); else if(idx===i) d.classList.add('active'); });
+      sound(420+i*70,.08,'triangle');
+      if(i<slides.length-1){ i++; introTimer=setTimeout(show,1900); }
+      else { setTimeout(()=>{ dots.forEach(d=>d.classList.remove('active')); dots.forEach(d=>d.classList.add('done')); dom.introContinueBtn.classList.remove('hidden'); },1500); }
+    };
+    show();
+  }
+
+  function finishIntro(){
+    clearTimeout(introTimer);
+    if(dom.introCinematic) dom.introCinematic.classList.add('hidden');
+    state.settings.introSeen=true;
+    dirty=true;
+    if(!state.settings.seenStory) openTutorial();
+  }
+
+  function openTutorial(){
+    if(!dom.storyModal) return;
+    dom.storyModal.classList.remove('hidden');
+    runTutorialAutoplay();
+  }
+
+  function tutorialTargetFor(i){
+    const map=[dom.appleBtn, dom.quickShopPanel, dom.openBestEggBtn, dom.summonBossBtn, dom.codeShowcase, dom.mainNav?.querySelector('[data-screen="worlds"]')];
+    return map[i] || dom.appleBtn;
+  }
+
+  function moveTutorialSpotlight(target){
+    if(!dom.tutorialSpotlight || !target){ dom.tutorialSpotlight?.classList.add('hidden'); return; }
+    const r=target.getBoundingClientRect();
+    dom.tutorialSpotlight.classList.remove('hidden');
+    dom.tutorialSpotlight.style.setProperty('--x', (r.left-10)+'px');
+    dom.tutorialSpotlight.style.setProperty('--y', (r.top-10)+'px');
+    dom.tutorialSpotlight.style.setProperty('--w', (r.width+20)+'px');
+    dom.tutorialSpotlight.style.setProperty('--h', (r.height+20)+'px');
+  }
+
+  function setTutorialStep(i){
+    const steps=[...dom.tutorialStepsWrap.querySelectorAll('[data-step]')];
+    tutorialIndex=clamp(i,0,Math.max(0,steps.length-1));
+    steps.forEach((el,idx)=>el.classList.toggle('active',idx===tutorialIndex));
+    if(dom.tutorialProgress) dom.tutorialProgress.style.width=((tutorialIndex+1)/steps.length*100)+'%';
+    if(dom.closeStoryBtn) dom.closeStoryBtn.textContent=tutorialIndex>=steps.length-1?'Começar agora':'Próximo';
+    moveTutorialSpotlight(tutorialTargetFor(tutorialIndex));
+  }
+
+  function runTutorialAutoplay(){
+    clearInterval(tutorialTimer);
+    const steps=[...dom.tutorialStepsWrap.querySelectorAll('[data-step]')];
+    let i=0;
+    tutorialIndex=0;
+    setTutorialStep(0);
+    tutorialTimer=setInterval(()=>{ i=(i+1)%steps.length; setTutorialStep(i); },2100);
+    window.addEventListener('resize',()=>setTutorialStep(tutorialIndex),{once:true});
+  }
+
+  function closeTutorial(){
+    clearInterval(tutorialTimer);
+    state.settings.seenStory=true;
+    dom.storyModal.classList.add('hidden');
+    dom.tutorialSpotlight?.classList.add('hidden');
+    dirty=true;
+  }
+
+  function rotateFeaturedCode(){
+    const list=[
+      {code:'V10CINEMA',title:'Visual cinema',desc:'Ganhe maçãs e XP para acelerar o começo.'},
+      {code:'WELISON5X',title:'Evento especial',desc:'Ative recompensa com tema de evento e tickets.'},
+      {code:'MACADOURADA',title:'Skin rara',desc:'Desbloqueie uma skin e receba um bônus inicial.'},
+      {code:'BOSSUPDATE',title:'Caça ao boss',desc:'Pegue tickets extras e força para continuar.'}
+    ];
+    const idx=Math.floor(now()/60000)%list.length;
+    featuredCode=list[idx].code;
+    if(dom.featuredCodeLabel) dom.featuredCodeLabel.textContent=list[idx].title;
+    if(dom.featuredCodeDesc) dom.featuredCodeDesc.textContent=list[idx].desc;
+    if(dom.featuredCodeChip){ dom.featuredCodeChip.textContent='••••••••'; dom.featuredCodeChip.classList.remove('revealed','used'); }
+    if(dom.useFeaturedCodeBtn){ dom.useFeaturedCodeBtn.disabled=true; dom.useFeaturedCodeBtn.textContent='⚡ Usar agora'; }
+  }
+
+  function revealFeaturedCode(autoUse=false){
+    rotateFeaturedCode();
+    if(dom.featuredCodeChip){
+      dom.featuredCodeChip.textContent=featuredCode;
+      dom.featuredCodeChip.classList.remove('revealed'); void dom.featuredCodeChip.offsetWidth; dom.featuredCodeChip.classList.add('revealed');
+    }
+    if(dom.useFeaturedCodeBtn) dom.useFeaturedCodeBtn.disabled=false;
+    sound(620,.12,'triangle');
+    if(autoUse) setTimeout(useFeaturedCode,700);
+  }
+
+  function useFeaturedCode(){
+    if(!featuredCode) revealFeaturedCode();
+    dom.codeInput.value=featuredCode;
+    dom.codeBtn.classList.remove('pulse-code'); void dom.codeBtn.offsetWidth; dom.codeBtn.classList.add('pulse-code');
+    if(dom.featuredCodeChip) dom.featuredCodeChip.classList.add('used');
+    setTimeout(()=>redeemCode(),260);
+  }
+
   function applyVisualState(){
     const classes=[world().theme];
     if(state.boss.active) classes.push('boss-active');
@@ -109,18 +224,19 @@
     if(state.event.rare && state.event.rareEnds>now()) classes.push('rare-'+state.event.rare);
     document.body.className=classes.join(' ');
     document.body.dataset.fx=fxMode();
+    document.body.style.setProperty('--lux-accent', state.event.welisonEnds>now() ? '#76ddff' : state.boss.active ? '#ff667e' : state.event.active==='double' ? '#ffd87a' : '#ffb35f');
     if(dom.worldSubtitle) dom.worldSubtitle.textContent = `${world().name} • multiplicador x${world().multi}`;
     if(dom.worldIcon) dom.worldIcon.textContent=world().icon;
     if(dom.worldName) dom.worldName.textContent=world().name;
   }
-  function setScreen(screen){ state.screen=screen; $$('.screen').forEach(s=>s.classList.toggle('active',s.id===`screen-${screen}`)); $$('#mainNav button').forEach(b=>b.classList.toggle('active',b.dataset.screen===screen)); dom.mainNav?.classList.remove('open'); render(); dirty=true; }
+  function setScreen(screen){ state.screen=screen; $$('.screen').forEach(s=>{ const on=s.id===`screen-${screen}`; s.classList.toggle('active',on); if(on){ s.classList.remove('screen-swap'); void s.offsetWidth; s.classList.add('screen-swap'); }}); $$('#mainNav button').forEach(b=>b.classList.toggle('active',b.dataset.screen===screen)); dom.mainNav?.classList.remove('open'); render(); if(screen==='codes'){ if(!state.settings.codeShowSeen){ state.settings.codeShowSeen=true; setTimeout(()=>revealFeaturedCode(false),320); } else rotateFeaturedCode(); } dirty=true; }
 
   function clickApple(ev){
     const t=now(); if(t>state.combo.expires) state.combo.count=0; state.combo.count++; state.combo.best=Math.max(state.combo.best,state.combo.count); state.combo.expires=t+1700;
     let gain=clickGain(); const crit=Math.random()*100<critChance(); if(crit) gain*=3;
     gain=Math.floor(gain); state.fruits+=gain; state.stats.total+=gain; state.stats.clicks++; state.stats.bestClick=Math.max(state.stats.bestClick,gain); addPassXp(1);
     if(state.boss.active){ const dmg=Math.max(1,Math.floor((gain + state.up.click*4 + 10)*bossDamageMulti())); damageBoss(dmg); float(ev, `-${fmt(dmg)} HP`, true); }
-    float(ev, `+${fmt(gain)}${crit?' CRIT':''}`, crit); burstClick(ev, crit); sound(state.boss.active?130:(crit?660:330), state.boss.active?.12:.08, state.boss.active?'sawtooth':'sine'); updateMissions(); dirty=true; renderHud();
+    float(ev, `+${fmt(gain)}${crit?' CRIT':''}`, crit); burstClick(ev, crit); sparkBurst(ev, crit); flashApple(crit); sound(state.boss.active?130:(crit?660:330), state.boss.active?.12:.08, state.boss.active?'sawtooth':'sine'); updateMissions(); dirty=true; renderHud();
   }
   function float(ev,text,crit=false){
     const low = fxMode()==='low';
@@ -130,6 +246,33 @@
     const r=dom.floatLayer.getBoundingClientRect(); const f=document.createElement('b'); f.className='float-text'+(crit?' crit':''); f.textContent=text; const x=ev?.clientX ? ev.clientX-r.left : r.width/2; const y=ev?.clientY ? ev.clientY-r.top : r.height/2; f.style.left=x+'px'; f.style.top=y+'px'; dom.floatLayer.appendChild(f); setTimeout(()=>f.remove(),low?620:950);
   }
   function burstClick(ev,crit=false){ if(fxMode()==='low' || !visible) return; const r=dom.floatLayer.getBoundingClientRect(); const cx=(ev?.clientX?ev.clientX-r.left:r.width/2), cy=(ev?.clientY?ev.clientY-r.top:r.height/2); const n=crit?8:4; for(let i=0;i<n;i++){ const b=document.createElement('i'); b.className='click-bit'; const a=Math.random()*Math.PI*2, d=35+Math.random()*58; b.style.left=cx+'px'; b.style.top=cy+'px'; b.style.setProperty('--dx',Math.cos(a)*d+'px'); b.style.setProperty('--dy',Math.sin(a)*d+'px'); dom.floatLayer.appendChild(b); setTimeout(()=>b.remove(),700); } }
+
+  function flashApple(crit=false){
+    if(!dom.appleBtn) return;
+    document.body.classList.remove('cinema-click'); void document.body.offsetWidth; document.body.classList.add('cinema-click');
+    dom.appleBtn.animate([
+      {transform:`rotateX(${dom.appleBtn.style.getPropertyValue('--tiltX')||'0deg'}) rotateY(${dom.appleBtn.style.getPropertyValue('--tiltY')||'0deg'}) scale(1)`},
+      {transform:`rotateX(${dom.appleBtn.style.getPropertyValue('--tiltX')||'0deg'}) rotateY(${dom.appleBtn.style.getPropertyValue('--tiltY')||'0deg'}) scale(${crit?1.08:1.04})`},
+      {transform:`rotateX(${dom.appleBtn.style.getPropertyValue('--tiltX')||'0deg'}) rotateY(${dom.appleBtn.style.getPropertyValue('--tiltY')||'0deg'}) scale(1)`}
+    ],{duration:crit?260:180,easing:'ease-out'});
+  }
+
+  function sparkBurst(ev,crit=false){
+    if(fxMode()==='low' || !visible) return;
+    const r=dom.floatLayer.getBoundingClientRect();
+    const cx=(ev?.clientX?ev.clientX-r.left:r.width/2), cy=(ev?.clientY?ev.clientY-r.top:r.height/2);
+    const n=crit?6:3;
+    for(let i=0;i<n;i++){
+      const s=document.createElement('span');
+      s.className='lux-spark';
+      s.style.left=cx+'px'; s.style.top=cy+'px';
+      const ang=Math.random()*Math.PI*2, dist=(crit?44:28)+Math.random()*(crit?56:32);
+      s.style.setProperty('--sx',Math.cos(ang)*dist+'px');
+      s.style.setProperty('--sy',Math.sin(ang)*dist+'px');
+      dom.floatLayer.appendChild(s);
+      setTimeout(()=>s.remove(),1000);
+    }
+  }
 
   function buyUpgrade(id){ const u=upgrades.find(x=>x.id===id); if(!u) return; if(u.special){ doPrestige(); return; } if(u.cap && state.up[id]>=u.cap) return toast('Esse upgrade já está no máximo.'); const cost=upgradeCost(u); if(state.fruits<cost) return toast('Faltam maçãs para comprar.'); state.fruits-=cost; u.apply(state); sound(520,.1); toast(`${u.name} comprado.`); updateMissions(); dirty=true; render(); }
   function doPrestige(){ const cost=prestigeCost(); if(state.fruits<cost) return toast(`Prestígio precisa de ${fmt(cost)} maçãs.`); state.fruits=0; state.prestige++; state.stats.prestiges++; state.up.click=1; state.up.auto=0; state.up.crit=0; state.up.rain=0; state.stats.total+=1000; addPassXp(80); toast('Prestígio feito! Bônus permanente aumentado.'); sound(760,.18); dirty=true; render(); }
@@ -143,6 +286,17 @@
   function fusePet(uid){ const p=state.pets.find(x=>x.uid===uid); if(!p) return; const same=state.pets.filter(x=>x.id===p.id && x.rarity===p.rarity && x.level===p.level); if(same.length<3) return toast('Precisa de 3 pets iguais e do mesmo level.'); same.slice(1,3).forEach(rem=>{ state.pets=state.pets.filter(x=>x.uid!==rem.uid); state.equippedPets=state.equippedPets.filter(x=>x!==rem.uid); }); p.level++; toast(`${p.name} evoluiu para level ${p.level}!`); lastPetSig=''; dirty=true; render(); }
   function openBestEgg(){ const affordable=[...eggs].reverse().find(e=>state.fruits>=e.cost); openEgg(affordable?.id||'common'); }
 
+
+  function showBossCinematic(name){
+    if(!dom.bossCinematic) return;
+    dom.bossCinematicName.textContent=name;
+    dom.bossCinematic.classList.remove('hidden');
+    dom.bossCinematic.classList.remove('boss-cinema-play');
+    void dom.bossCinematic.offsetWidth;
+    dom.bossCinematic.classList.add('boss-cinema-play');
+    setTimeout(()=>dom.bossCinematic.classList.add('hidden'),2600);
+  }
+
   function startBoss(type='normal'){
     if(state.boss.active) return toast('Já existe um boss ativo. Clique na caveira para atacar.');
     if(type==='normal'){ if(state.tickets.boss<=0) return toast('Sem ticket boss. Compre na loja rápida ou ganhe em eventos.'); state.tickets.boss--; }
@@ -150,12 +304,12 @@
     const worldIndex=worlds.findIndex(w=>w.id===state.world)+1;
     const max=Math.floor((weekly?520000:160000) * (1+state.prestige*.28) * Math.max(1,worldIndex*.55));
     state.boss={active:true,type,name:welison?'💙 Boss Azul Welison':weekly?'💀 Boss Semanal Supremo':'💀 Rei Caveira do Pomar',hp:max,max,ends:now()+(weekly?120000:90000),damage:0};
-    applyVisualState(); toast(`${state.boss.name} apareceu! A maçã virou caveira.`); spawnBossPulse(); sound(120,.28,'sawtooth'); dirty=true; render();
+    applyVisualState(); showBossCinematic(state.boss.name); toast(`${state.boss.name} apareceu! A maçã virou caveira.`); spawnBossPulse(); sound(120,.28,'sawtooth'); dirty=true; render();
   }
   function damageBoss(dmg){ if(!state.boss.active) return; state.boss.hp=Math.max(0,state.boss.hp-dmg); state.boss.damage+=dmg; state.stats.bossDamage+=dmg; if(state.boss.hp<=0) killBoss(); }
   function killBoss(){ const reward=Math.floor((state.boss.max/9) * (state.boss.type==='weekly'?2.2:1) * (state.event.welisonEnds>now()?2:1)); state.fruits+=reward; state.stats.total+=reward; state.stats.bossKills++; state.tickets.boss++; ensureMissions(); state.missions.daily.boss=(state.missions.daily.boss||0)+1; addPassXp(120); toast(`Boss derrotado! +${fmt(reward)} maçãs e +1 ticket.`); state.boss.active=false; state.boss.hp=0; sound(820,.25); applyVisualState(); dirty=true; render(); }
   function endBossByTime(){ const reward=Math.floor(state.boss.damage/8); state.fruits+=reward; state.stats.total+=reward; toast(`Boss fugiu. Recompensa por dano: ${fmt(reward)} maçãs.`); state.boss.active=false; state.boss.hp=0; applyVisualState(); dirty=true; render(); }
-  function spawnBossPulse(){ if(fxMode()==='low') return; for(let i=0;i<10;i++){ const p=document.createElement('span'); p.className='particle'; p.textContent=Math.random()<.7?'💀':'🔥'; p.style.left=Math.random()*100+'vw'; p.style.setProperty('--x',(Math.random()*120-60)+'px'); p.style.animationDuration=(2.4+Math.random()*2.4)+'s'; dom.particleLayer.appendChild(p); setTimeout(()=>p.remove(),5600); } }
+  function spawnBossPulse(){ document.body.classList.remove('boss-impact'); void document.body.offsetWidth; document.body.classList.add('boss-impact'); if(fxMode()==='low') return; for(let i=0;i<10;i++){ const p=document.createElement('span'); p.className='particle'; p.textContent=Math.random()<.7?'💀':'🔥'; p.style.left=Math.random()*100+'vw'; p.style.setProperty('--x',(Math.random()*120-60)+'px'); p.style.animationDuration=(2.4+Math.random()*2.4)+'s'; dom.particleLayer.appendChild(p); setTimeout(()=>p.remove(),5600); } }
 
   function updateEvents(){
     const t=now(); let changed=false;
@@ -184,16 +338,70 @@
     {id:'wprestige',kind:'weekly',icon:'⭐',name:'Semana: 1 prestígio',cur:state.missions.weekly.prestige||0,need:1,xp:160,reward:75000}
   ]; }
   function claimMission(id){ const m=missionDefs().find(x=>x.id===id); if(!m || m.cur<m.need) return toast('Missão ainda incompleta.'); const key=m.kind+'Claimed'; state.missions[key] ||= {}; if(state.missions[key][id]) return toast('Missão já coletada.'); state.missions[key][id]=true; state.fruits+=m.reward; state.stats.total+=m.reward; addPassXp(m.xp); toast(`Missão concluída: +${fmt(m.reward)} maçãs e +${m.xp} XP.`); dirty=true; render(); }
-  function redeemCode(){ const code=(dom.codeInput.value||'').trim().toUpperCase(); const rewards={V10CINEMA:{fruits:50000,xp:100},WELISON5X:{fruits:25000,ticket:2},MACADOURADA:{skin:'gold',fruits:10000},BOSSUPDATE:{ticket:5,fruits:20000}}; const r=rewards[code]; if(!r) return toast('Código inválido.'); if(state.codes[code]) return toast('Código já usado.'); state.codes[code]=true; if(r.fruits){state.fruits+=r.fruits;state.stats.total+=r.fruits;} if(r.ticket) state.tickets.boss+=r.ticket; if(r.xp) addPassXp(r.xp); if(r.skin){state.unlockedSkins[r.skin]=true;state.skin=r.skin;} toast(`Código ${code} resgatado!`); sound(840,.18); dirty=true; dom.codeInput.value=''; render(); }
+  function redeemCode(){ const code=(dom.codeInput.value||'').trim().toUpperCase(); const rewards={V10CINEMA:{fruits:50000,xp:100},WELISON5X:{fruits:25000,ticket:2},MACADOURADA:{skin:'gold',fruits:10000},BOSSUPDATE:{ticket:5,fruits:20000}}; const r=rewards[code]; if(!r){ dom.codeShowcase?.classList.add('code-error'); setTimeout(()=>dom.codeShowcase?.classList.remove('code-error'),520); return toast('Código inválido.'); } if(state.codes[code]) return toast('Código já usado.'); state.codes[code]=true; if(r.fruits){state.fruits+=r.fruits;state.stats.total+=r.fruits;} if(r.ticket) state.tickets.boss+=r.ticket; if(r.xp) addPassXp(r.xp); if(r.skin){state.unlockedSkins[r.skin]=true;state.skin=r.skin;} toast(`Código ${code} resgatado!`); dom.codeShowcase?.classList.remove('code-success'); void dom.codeShowcase?.offsetWidth; dom.codeShowcase?.classList.add('code-success'); sound(840,.18); setTimeout(()=>sound(1040,.12,'triangle'),120); dirty=true; dom.codeInput.value=''; if(dom.featuredCodeChip && code===featuredCode){ dom.featuredCodeChip.classList.add('used'); } render(); }
   function updateRanking(){ localStorage.setItem(RANK_KEY, JSON.stringify({clicks:state.stats.clicks, apples:state.stats.total, prestige:state.prestige, boss:state.stats.bossDamage, play:state.stats.play})); }
 
-  function render(){ renderHud(); renderQuickShop(); const s=state.screen; if(s==='worlds') renderWorlds(); if(s==='shop') renderShop(); if(s==='pets') renderPets(); if(s==='boss') renderBoss(); if(s==='pass') renderPass(); if(s==='missions') renderMissions(); if(s==='ranking') renderRanking(); if(s==='skins') renderSkins(); if(s==='settings') renderSettings(); }
-  function renderHud(){ applyVisualState(); dom.fruitCount.textContent=fmt(state.fruits); dom.clickStat.textContent='+'+fmt(clickGain()); dom.autoStat.textContent=fmt(autoGain())+'/s'; dom.multiStat.textContent='x'+globalMulti().toFixed(1); dom.petStat.textContent='x'+petMulti().toFixed(1); dom.worldStat.textContent='x'+worldMulti(); dom.comboText.textContent='Combo x'+Math.max(1,state.combo.count); dom.passMini.textContent=passLevel(); dom.appleSkin.textContent=state.boss.active?'💀':skin().icon; dom.bossMini.textContent=state.boss.active?clock(state.boss.ends-now()):'Inativo';
+  function render(){ renderHud(); renderQuickShop(); const s=state.screen; if(s==='worlds') renderWorlds(); if(s==='shop') renderShop(); if(s==='pets') renderPets(); if(s==='boss') renderBoss(); if(s==='pass') renderPass(); if(s==='missions') renderMissions(); if(s==='ranking') renderRanking(); if(s==='skins') renderSkins(); if(s==='settings') renderSettings(); if(s==='codes') rotateFeaturedCode(); }
+  function renderHud(){ applyVisualState();
+    const nextVals={fruitCount:fmt(state.fruits),clickStat:'+'+fmt(clickGain()),autoStat:fmt(autoGain())+'/s',multiStat:'x'+globalMulti().toFixed(1),petStat:'x'+petMulti().toFixed(1),worldStat:'x'+worldMulti(),comboText:'Combo x'+Math.max(1,state.combo.count),passMini:String(passLevel()),bossMini:state.boss.active?clock(state.boss.ends-now()):'Inativo'};
+    Object.entries(nextVals).forEach(([id,val])=>{ if(dom[id]){ if(hudMemory[id]!==undefined && hudMemory[id]!==val) pulseMetric(dom[id]); dom[id].textContent=val; hudMemory[id]=val; } });
+    dom.appleSkin.textContent=state.boss.active?'💀':skin().icon;
     dom.eventTitle.textContent=state.event.welisonEnds>now()?'💙 Welison 5x ativo':state.event.active==='double'?'⚡ Evento 2x ativo':'⚡ Próximo 2x';
     dom.eventHint.textContent=state.event.welisonEnds>now()?`Termina em ${clock(state.event.welisonEnds-now())}`:state.event.active==='double'?`Termina em ${clock(state.event.ends-now())}`:`Começa em ${clock(state.event.next-now())}`;
     const bossPct=state.boss.active?`${100*state.boss.hp/state.boss.max}%`:'0%'; if(dom.bossLife) dom.bossLife.style.width=bossPct; if(dom.bossAlertLife) dom.bossAlertLife.style.width=bossPct; dom.bossAlert?.classList.toggle('hidden',!state.boss.active); if(state.boss.active){ dom.bossAlertName.textContent=state.boss.name; dom.bossAlertTimer.textContent=`${clock(state.boss.ends-now())} • ${fmt(state.boss.hp)} HP`; }
     renderPetOrbit(); }
-  function renderPetOrbit(){ const sig=state.equippedPets.join('|')+':'+state.pets.length; if(sig===lastPetSig) return; lastPetSig=sig; dom.petOrbit.innerHTML=''; state.equippedPets.map(id=>state.pets.find(p=>p.uid===id)).filter(Boolean).slice(0,3).forEach(p=>{ const e=document.createElement('span'); e.className='pet-friend'; e.textContent=p.icon; e.title=p.name; dom.petOrbit.appendChild(e); }); }
+  function renderPetOrbit(){ const sig=state.equippedPets.join('|')+':'+state.pets.length; if(sig===lastPetSig) return; lastPetSig=sig; dom.petOrbit.innerHTML=''; state.equippedPets.map(id=>state.pets.find(p=>p.uid===id)).filter(Boolean).slice(0,3).forEach((p,i)=>{ const e=document.createElement('span'); e.className='pet-friend'; e.textContent=p.icon; e.title=p.name; e.style.animationDelay=(i*.5)+'s'; dom.petOrbit.appendChild(e); }); }
+
+  function pulseMetric(el){ el.classList.remove('metric-pop'); void el.offsetWidth; el.classList.add('metric-pop'); }
+
+  function setupAppleMotion(){
+    if(!dom.appleBtn) return;
+    const reset=()=>{ dom.appleBtn.style.setProperty('--tiltX','0deg'); dom.appleBtn.style.setProperty('--tiltY','0deg'); };
+    dom.appleBtn.addEventListener('pointermove',e=>{
+      if(fxMode()==='low') return;
+      const r=dom.appleBtn.getBoundingClientRect();
+      const px=(e.clientX-r.left)/r.width-.5, py=(e.clientY-r.top)/r.height-.5;
+      dom.appleBtn.style.setProperty('--tiltY', (px*10).toFixed(2)+'deg');
+      dom.appleBtn.style.setProperty('--tiltX', (-py*10).toFixed(2)+'deg');
+    });
+    dom.appleBtn.addEventListener('pointerleave', reset);
+    dom.appleBtn.addEventListener('pointercancel', reset);
+  }
+
+  function ambientLux(){
+    if(fxMode()==='low' || !visible || !dom.floatLayer || state.screen!=='home') return;
+    const zone=dom.floatLayer.getBoundingClientRect();
+    const mote=document.createElement('span');
+    mote.className='lux-mote';
+    mote.style.left=(zone.width*(.25+Math.random()*.5))+'px';
+    mote.style.top=(zone.height*(.58+Math.random()*.18))+'px';
+    mote.style.setProperty('--drift', (Math.random()*36-18)+'px');
+    dom.floatLayer.appendChild(mote);
+    setTimeout(()=>mote.remove(),4800);
+  }
+
+  function buttonRipples(){
+    document.addEventListener('pointerdown',e=>{
+      const b=e.target.closest('button');
+      if(!b || fxMode()==='low') return;
+      const r=b.getBoundingClientRect();
+      const span=document.createElement('span');
+      span.style.position='absolute';
+      span.style.left=(e.clientX-r.left)+'px';
+      span.style.top=(e.clientY-r.top)+'px';
+      span.style.width='10px';
+      span.style.height='10px';
+      span.style.borderRadius='999px';
+      span.style.pointerEvents='none';
+      span.style.background='radial-gradient(circle, rgba(255,255,255,.55), rgba(255,255,255,.18) 45%, transparent 72%)';
+      span.style.transform='translate(-50%,-50%) scale(.2)';
+      span.style.opacity='.9';
+      span.style.position='absolute';
+      b.appendChild(span);
+      span.animate([{transform:'translate(-50%,-50%) scale(.2)',opacity:.9},{transform:'translate(-50%,-50%) scale(11)',opacity:0}],{duration:520,easing:'ease-out'});
+      setTimeout(()=>span.remove(),560);
+    });
+  }
   function renderQuickShop(){ if(!dom.quickShopList) return; dom.quickShopPanel.classList.toggle('collapsed',!!state.settings.quickCollapsed && innerWidth>980); const ids=['click','auto','global','bossDmg','crit']; const html=ids.map(id=>{ const u=upgrades.find(x=>x.id===id), cost=upgradeCost(u), lvl=state.up[id]||0; return `<div class="quick-buy"><div class="icon">${u.icon}</div><div><h3>${u.name}</h3><small>Lv ${lvl} • ${fmt(cost)} 🍎</small></div><button class="primary" data-quick-buy="${id}">Comprar</button></div>`; }).join('') + `<div class="quick-buy"><div class="icon">🎟️</div><div><h3>Ticket Boss</h3><small>${state.tickets.boss} tickets • ${fmt(60000*Math.max(1,state.tickets.boss+1))} 🍎</small></div><button class="secondary" data-buy-ticket>Comprar</button></div>` + `<div class="quick-buy"><div class="icon">🥚</div><div><h3>Melhor ovo</h3><small>Abre o melhor ovo possível</small></div><button class="secondary" data-quick-egg>Abrir</button></div>`;
     dom.quickShopList.innerHTML=html; $$('[data-quick-buy]').forEach(b=>b.onclick=()=>buyUpgrade(b.dataset.quickBuy)); $('[data-buy-ticket]')?.addEventListener('click',buyTicket,{once:true}); $('[data-quick-egg]')?.addEventListener('click',openBestEgg,{once:true}); }
   function renderWorlds(){ dom.worldGrid.innerHTML=worlds.map(w=>{ const unlocked=!!state.unlockedWorlds[w.id], can=state.stats.total>=w.need; return `<div class="card ${unlocked?'':'locked'}"><div class="icon">${w.icon}</div><span class="tag">x${w.multi} • ${w.music}Hz</span><h3>${w.name}</h3><p>${w.desc}</p><p><b>Loja:</b> ${w.shop}</p><button class="${unlocked?'primary':'secondary'}" data-world="${w.id}">${unlocked?(state.world===w.id?'Atual':'Entrar'):can?'Desbloquear':'Precisa '+fmt(w.need)}</button></div>`; }).join(''); $$('[data-world]').forEach(b=>b.onclick=()=>unlockWorld(b.dataset.world)); }
@@ -206,18 +414,21 @@
   function renderSkins(){ dom.skinGrid.innerHTML=skins.map(s=>{ const unlocked=state.unlockedSkins[s.id], can=state.stats.total>=s.need; return `<div class="card ${unlocked?'':'locked'}"><div class="icon">${s.icon}</div><span class="tag">${unlocked?'Desbloqueada':'Precisa '+fmt(s.need)}</span><h3>${s.name}</h3><p>${state.skin===s.id?'Skin atual':'Troque a aparência da maçã principal.'}</p><button class="${unlocked?'primary':'secondary'}" data-skin="${s.id}">${unlocked?'Usar':can?'Desbloquear':'Bloqueada'}</button></div>`; }).join(''); $$('[data-skin]').forEach(b=>b.onclick=()=>unlockSkin(b.dataset.skin)); }
   function renderSettings(){ dom.soundBtn.textContent=state.settings.sound?'🔊 Som ligado':'🔇 Som desligado'; dom.musicBtn.textContent=state.settings.music?'🎵 Música ligada':'🎵 Música desligada'; dom.perfBtn.textContent='✨ Efeitos: '+(state.settings.perf==='auto'?'Auto':state.settings.perf==='low'?'Leve':'Alto'); document.body.dataset.fx=fxMode(); }
 
-  function loop(){ const t=now(), dt=Math.min(2,(t-lastTick)/1000); lastTick=t; if(visible){ const ag=autoGain()*dt; if(ag>0){ state.fruits+=ag; state.stats.total+=ag; dirty=true; } state.stats.play+=dt; } updateEvents(); if(t>state.combo.expires) state.combo.count=0; if(t-lastSave>5000 && dirty){ save(); lastSave=t; } const interval = fxMode()==='low' ? 260 : 120; if(t-lastHud>interval){ renderHud(); lastHud=t; } requestAnimationFrame(loop); }
-  function init(){ bindDom(); load(); let progress=0; const loadTimer=setInterval(()=>{ progress+=18+Math.random()*16; dom.loaderBar.style.width=Math.min(100,progress)+'%'; if(progress>=100){ clearInterval(loadTimer); dom.startBtn.classList.remove('hidden'); } },160);
-    dom.startBtn.onclick=()=>{ dom.loadingScreen.style.opacity='0'; setTimeout(()=>dom.loadingScreen.remove(),450); if(!state.settings.seenStory) dom.storyModal.classList.remove('hidden'); music(); };
-    dom.closeStoryBtn.onclick=()=>{ state.settings.seenStory=true; dom.storyModal.classList.add('hidden'); dirty=true; };
+  function loop(){ const t=now(), dt=Math.min(2,(t-lastTick)/1000); lastTick=t; if(visible){ const ag=autoGain()*dt; if(ag>0){ state.fruits+=ag; state.stats.total+=ag; dirty=true; } state.stats.play+=dt; } updateEvents(); if(t>state.combo.expires) state.combo.count=0; if(t-lastSave>5000 && dirty){ save(); lastSave=t; } const interval = fxMode()==='low' ? 260 : 120; if(t-lastHud>interval){ renderHud(); lastHud=t; } if(t-ambientTimer>(fxMode()==='low'?999999:560)){ ambientLux(); ambientTimer=t; } requestAnimationFrame(loop); }
+  function init(){ bindDom(); load(); setupAppleMotion(); buttonRipples(); let progress=0; const loadTimer=setInterval(()=>{ progress+=18+Math.random()*16; dom.loaderBar.style.width=Math.min(100,progress)+'%'; if(progress>=100){ clearInterval(loadTimer); dom.startBtn.classList.remove('hidden'); } },160);
+    dom.startBtn.onclick=()=>{ dom.loadingScreen.style.opacity='0'; setTimeout(()=>dom.loadingScreen.remove(),450); music(); if(!state.settings.introSeen) playIntro(); else if(!state.settings.seenStory) openTutorial(); };
+    dom.skipIntroBtn.onclick=finishIntro;
+    dom.introContinueBtn.onclick=finishIntro;
+    dom.closeStoryBtn.onclick=()=>{ const steps=[...dom.tutorialStepsWrap.querySelectorAll('[data-step]')]; if(tutorialIndex<steps.length-1){ clearInterval(tutorialTimer); setTutorialStep(tutorialIndex+1); } else closeTutorial(); };
+    dom.tutorialSkipBtn.onclick=()=>{ closeTutorial(); };
     dom.mobileMenuBtn.onclick=()=>dom.mainNav.classList.toggle('open'); dom.mainNav.onclick=e=>{ const b=e.target.closest('button[data-screen]'); if(b) setScreen(b.dataset.screen); };
     dom.quickShopToggle.onclick=()=>{ if(innerWidth<=980) dom.quickShopPanel.classList.toggle('open-mobile'); else { state.settings.quickCollapsed=!state.settings.quickCollapsed; dirty=true; renderQuickShop(); } };
     dom.openFullShopBtn.onclick=()=>setScreen('shop');
-    dom.appleBtn.onclick=clickApple; dom.claimDailyBtn.onclick=claimDaily; dom.openBestEggBtn.onclick=openBestEgg; dom.summonBossBtn.onclick=()=>startBoss('normal'); dom.bossTicketBtn.onclick=()=>startBoss('normal'); dom.weeklyBossBtn.onclick=()=>startBoss('weekly'); dom.codeBtn.onclick=redeemCode; dom.codeInput.onkeydown=e=>{if(e.key==='Enter')redeemCode();};
+    dom.appleBtn.onclick=clickApple; dom.claimDailyBtn.onclick=claimDaily; dom.openBestEggBtn.onclick=openBestEgg; dom.summonBossBtn.onclick=()=>startBoss('normal'); dom.bossTicketBtn.onclick=()=>startBoss('normal'); dom.weeklyBossBtn.onclick=()=>startBoss('weekly'); dom.revealCodeBtn.onclick=()=>revealFeaturedCode(false); dom.useFeaturedCodeBtn.onclick=useFeaturedCode; dom.codeBtn.onclick=redeemCode; dom.codeInput.onkeydown=e=>{if(e.key==='Enter')redeemCode();};
     dom.soundBtn.onclick=()=>{state.settings.sound=!state.settings.sound; sound(500,.1); dirty=true; renderSettings();}; dom.musicBtn.onclick=()=>{state.settings.music=!state.settings.music; music(); dirty=true; renderSettings();}; dom.perfBtn.onclick=()=>{state.settings.perf=state.settings.perf==='auto'?'high':state.settings.perf==='high'?'low':'auto'; document.body.dataset.fx=fxMode(); dirty=true; renderSettings();};
     dom.saveBtn.onclick=()=>{save();toast('Jogo salvo.');}; dom.exportBtn.onclick=()=>{dom.saveBox.value=btoa(unescape(encodeURIComponent(JSON.stringify(state)))); dom.saveBox.select(); toast('Save exportado.');}; dom.importBtn.onclick=()=>{try{state=merge(defaultState(), JSON.parse(decodeURIComponent(escape(atob(dom.saveBox.value.trim()))))); normalizeState(); save(); applyVisualState(); render(); toast('Save importado.');}catch{toast('Save inválido.');}}; dom.resetBtn.onclick=()=>{ if(confirm('Resetar todo o progresso V10?')){ localStorage.removeItem(SAVE_KEY); state=defaultState(); save(); location.reload(); } };
     document.addEventListener('visibilitychange',()=>{ visible=!document.hidden; if(!visible) save(); }); window.addEventListener('beforeunload',save); window.addEventListener('resize',()=>{document.body.dataset.fx=fxMode(); renderQuickShop();});
-    setScreen(state.screen||'home'); render(); requestAnimationFrame(loop); if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=10.4.0').catch(()=>{}); }
+    setScreen(state.screen||'home'); render(); requestAnimationFrame(loop); if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js?v=10.9.0-cinema-supreme').catch(()=>{}); }
   }
   init();
 })();
